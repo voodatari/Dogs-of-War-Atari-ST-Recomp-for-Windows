@@ -1,7 +1,7 @@
 # Dogs of War Atari ST Recomp for Windows
 
 > **Where things are** — `source/`: the complete C source (the game translated to C in `source/generated/`, the machine in `source/runtime/`, the Windows program in `source/host/`; build it with `source/build.bat`, see `source/README.md`).
-> The ready-to-run program is on the **[Releases](https://github.com/voodatari/Dogs-of-War-Atari-ST-Recomp-for-Windows/releases)** page: a zip with `dowport.exe`, `data/languages/`, `shaders/`, `music/`, `assets/` and `default.json`. You only add the original game file `FILES\DOW` (see *Quick start*).
+> The ready-to-run program is on the **[Releases](https://github.com/voodatari/Dogs-of-War-Atari-ST-Recomp-for-Windows/releases)** page: a zip with `dowport.exe`, `data/languages/`, `shaders/`, `music/`, `assets/` and `default.json`. The zip already includes the game file `data\FILES\DOW`.
 
 *Versión en español a continuación / Spanish version below: [Dogs of War Atari ST Recomp for Windows – Port para Windows a 60 fps](#dogs-of-war-atari-st-recomp-for-windows--port-para-windows-a-60-fps).*
 
@@ -41,7 +41,7 @@ This is a **release candidate** of an unofficial, fan-made **native Windows port
 - **Fixes** for stutters and glitches that appear only at high frame rates (all can be switched off).
 
 ## Quick start
-1. Put the file `FILES\DOW` of your original game in the **`data`** folder next to `dowport.exe` (`data\FILES\DOW`). It is the only original file needed, and it only provides the game's data; the other files of the disk are not used. If it is missing the program says so and quits.
+1. The game file `FILES\DOW` must be in the **`data`** folder next to `dowport.exe` (`data\FILES\DOW`); the Release zip already includes it, and if you build from source you copy it there from your original game. It is the only original file needed, and it only provides the game's data; the other files of the disk are not used. If it is missing the program says so and quits.
 2. Run `dowport.exe`. On the first start it prepares, in a few seconds, `assets\original\` (the graphics dump, see [Graphics packs](#graphics-packs)).
 3. Press **Esc** (or the pad's **Start**) for the options menu.
 
@@ -227,7 +227,7 @@ Everything is in `source/` (see `source/README.md`). Install a C compiler (Zig, 
 
 ## License
 The code written for this project (the Windows program in `source/host/`, the machine in `source/runtime/`, the build scripts and the documentation) is released under the **GNU General Public License v3.0** (see [LICENSE](LICENSE)).
-`source/generated/` is the game's own program translated to C: it derives from the original game, whose rights remain with its owners. The RetroArch shaders keep their own licences (see *Shaders and licences*), and the music packs and the graphics pack that come in the Release are not covered by this licence either.
+`source/generated/` is the game's own program translated to C: it derives from the original game, whose rights remain with its owners. The RetroArch shaders keep their own licences (see *Shaders and licences*), and the game file `data\FILES\DOW`, the music packs and the graphics pack that come in the Release are not covered by this licence either.
 
 ## Status
 Working: boot from the original files, title, menus, mission map, shop and all missions with 60 fps interpolation. Pending: more object types (other levels and bosses).
@@ -239,7 +239,7 @@ Credits: Claude Sonnet 5.5 & VooD.
 # Dogs of War Atari ST Recomp for Windows – Port para Windows a 60 fps
 
 > **Dónde está cada cosa** — `source/`: el código fuente completo en C (el juego traducido a C en `source/generated/`, la máquina en `source/runtime/`, el programa para Windows en `source/host/`; se compila con `source/build.bat`, véase `source/README.md`).
-> El programa listo para ejecutar está en la página de **[Releases](https://github.com/voodatari/Dogs-of-War-Atari-ST-Recomp-for-Windows/releases)**: un zip con `dowport.exe`, `data/languages/`, `shaders/`, `music/`, `assets/` y `default.json`. Solo tienes que añadir el fichero original del juego `FILES\DOW` (véase *Inicio rápido*).
+> El programa listo para ejecutar está en la página de **[Releases](https://github.com/voodatari/Dogs-of-War-Atari-ST-Recomp-for-Windows/releases)**: un zip con `dowport.exe`, `data/languages/`, `shaders/`, `music/`, `assets/` y `default.json`. El zip ya incluye el fichero del juego `data\FILES\DOW`.
 
 Port nativo para Windows de **Dogs of War** (Atari ST, Elite 1989, versión HAGA de Pera Putnik). El programa 68000 del propio juego, traducido a C, se ejecuta dentro de una pequeña
 máquina Atari STE y se dibuja a la frecuencia de refresco de tu monitor: la lógica del juego va a 25 Hz y el port **interpola entre sus fotogramas**, de modo que el movimiento es fluido a 60 Hz
@@ -277,7 +277,7 @@ Esta es una **versión candidata a lanzamiento** de un **port nativo para Window
 - **Correcciones** de tirones y fallos que solo aparecen con frecuencias de fotogramas altas (todas se pueden desactivar).
 
 ## Inicio rápido
-1. Pon el fichero `FILES\DOW` de tu juego original en la carpeta **`data`**, junto a `dowport.exe` (`data\FILES\DOW`). Es el único fichero original que hace falta y solo aporta los datos del juego; el resto de ficheros del disco no se usan. Si falta, el programa lo avisa y se cierra.
+1. El fichero del juego `FILES\DOW` debe estar en la carpeta **`data`**, junto a `dowport.exe` (`data\FILES\DOW`); el zip de la Release ya lo incluye, y si compilas desde el código lo copias ahí desde tu juego original. Es el único fichero original que hace falta y solo aporta los datos del juego; el resto de ficheros del disco no se usan. Si falta, el programa lo avisa y se cierra.
 2. Ejecuta `dowport.exe`. En el primer arranque prepara, en unos segundos, `assets\original\` (el volcado de gráficos, véase [Packs gráficos](#packs-gráficos)).
 3. Pulsa **Esc** (o **Start** del mando) para abrir el menú de opciones.
 
@@ -463,7 +463,7 @@ Todo está en `source/` (véase `source/README.md`). Instala un compilador de C 
 
 ## Licencia
 El código escrito para este proyecto (el programa para Windows de `source/host/`, la máquina de `source/runtime/`, los scripts de compilación y la documentación) se publica bajo la **GNU General Public License v3.0** (véase [LICENSE](LICENSE)).
-`source/generated/` es el propio programa del juego traducido a C: deriva del juego original, cuyos derechos siguen siendo de sus titulares. Los shaders de RetroArch conservan sus propias licencias (véase *Shaders y licencias*), y los bancos de música y el pack gráfico que vienen en la Release tampoco están cubiertos por esta licencia.
+`source/generated/` es el propio programa del juego traducido a C: deriva del juego original, cuyos derechos siguen siendo de sus titulares. Los shaders de RetroArch conservan sus propias licencias (véase *Shaders y licencias*), y el fichero del juego `data\FILES\DOW`, los bancos de música y el pack gráfico que vienen en la Release tampoco están cubiertos por esta licencia.
 
 ## Estado
 Funciona: arranque desde los ficheros originales, título, menús, mapa de misiones, tienda y todas las misiones con interpolación a 60 fps. Pendiente: más tipos de objeto (otros niveles y jefes).
