@@ -1,0 +1,10 @@
+# build output
+source/build/
+*.o
+*.pdb
+
+# files made by the program
+options.json
+error.log
+saves/
+assets/original/
