@@ -7,7 +7,7 @@
 
 enum { MK_SEP, MK_BOOL, MK_CHOICE, MK_SLIDER, MK_ACTION, MK_TAB, MK_IMAGE };      /* MK_IMAGE: a picture (its label is the path of the PNG) that fills the rest of the list, not selectable; MK_TAB: starts a tab (its label is the name of the tab, hint = text shown while the tab bar is selected); the items that follow belong to it */
 typedef struct MItem {
-    int kind; char label[96]; const char *hint; int plain;
+    int kind; char label[96]; const char *hint; int plain; const char *path;     /* path: the PNG of an MK_IMAGE item (it does not fit in label: paths can be long) */
     int (*getb)(void); void (*setb)(int);                               /* bool */
     int (*nch)(void); const char *(*chtext)(int i); int (*getch)(void); void (*setch)(int i);        /* choice */
     double lo, hi, step; const char *fmt; double (*getd)(void); void (*setd)(double);                /* slider */

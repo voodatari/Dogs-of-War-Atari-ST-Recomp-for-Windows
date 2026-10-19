@@ -230,7 +230,7 @@ static void add_action(const char *l, const char *h, void (*a)(void)) { MItem it
 static void add_tab(const char *l, const char *hint) { MItem it; memset(&it, 0, sizeof it); it.kind = MK_TAB; snprintf(it.label, sizeof it.label, "%s", l); it.hint = hint; menu_add(menu, &it); }
 static void add_sep(const char *l, int plain) { MItem it; memset(&it, 0, sizeof it); it.kind = MK_SEP; snprintf(it.label, sizeof it.label, "%s", l); it.plain = plain; menu_add(menu, &it); }
 
-static void add_image(const char *path) { MItem it; memset(&it, 0, sizeof it); it.kind = MK_IMAGE; snprintf(it.label, sizeof it.label, "%s", path); menu_add(menu, &it); }
+static void add_image(const char *path) { MItem it; memset(&it, 0, sizeof it); it.kind = MK_IMAGE; it.path = _strdup(path); menu_add(menu, &it); }
 static void build_controls_menu(void) {                                        /* the window to redefine the keys and the pad buttons */
     menu = menu_ctl = menu_new("title.controls");
     add_sep("sep.keyboard", 0);

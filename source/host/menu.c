@@ -171,7 +171,7 @@ uint8_t *menu_draw(Menu *m, int W, int H) {
     for (int i = m->top; i < n && i < m->top + rows; i++) {
         MItem *it = &m->it[i]; int sel = i == m->cur && !m->tabfocus; char label[128];
         tr_label(it->dynlabel ? it->dynlabel() : it->label, label, sizeof label);
-        if (it->kind == MK_IMAGE) { blit_image(bits, W, H, it->label, px + 20, y, pw - 40, py + 14 + hb + tabh + rows * lh - y); break; }
+        if (it->kind == MK_IMAGE) { blit_image(bits, W, H, it->path ? it->path : "", px + 20, y, pw - 40, py + 14 + hb + tabh + rows * lh - y); break; }
         if (it->kind == MK_SEP && !label[0]) { y += lh; continue; }
         if (it->kind == MK_SEP) {
             if (it->plain) text_at(dc, px + 30, y, label, RGB(215, 215, 230));

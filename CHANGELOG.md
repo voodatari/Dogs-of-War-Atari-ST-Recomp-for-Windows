@@ -14,6 +14,7 @@ The program is a single native C executable. Nothing is interpreted and nothing 
 **Menu**
 - The options are grouped in tabs (Game, Sound, Video, Motion, Controls, System). L1/R1 or Page Up/Page Down change tab, and the menu reopens on the last tab and option used.
 - The Controls tab shows a picture of the gamepad (`assets\controller.png`, with its transparency respected) and an option that opens a window to redefine the keys and the pad buttons.
+- Fixed the gamepad picture not showing when the program sits in a folder with a long path.
 - Menu texts come from XML language files (`data\languages`): English and Spanish, selectable in System → Language; other languages can be added by copying a file.
 - The explanation of each option appears at the bottom in a smaller font than the options; for options with several values, a general explanation is followed by a line and the explanation of the chosen value (only this second text changes its font size to fit).
 - Texts of the options were reviewed and shortened.
@@ -95,6 +96,7 @@ El programa es un único ejecutable nativo en C. No se interpreta nada y no se n
 **Menú**
 - Las opciones se agrupan en pestañas (Juego, Sonido, Vídeo, Movimiento, Controles, Sistema). L1/R1 o Re Pág/Av Pág cambian de pestaña, y el menú se reabre en la última pestaña y opción usadas.
 - La pestaña Controles muestra una imagen del mando (`assets\controller.png`, respetando su transparencia) y una opción que abre una ventana para redefinir las teclas y los botones del mando.
+- Corregida la imagen del mando, que no se mostraba cuando el programa estaba en una carpeta con una ruta larga.
 - Los textos del menú salen de ficheros de idioma XML (`data\languages`): inglés y español, seleccionables en Sistema → Idioma; se pueden añadir otros idiomas copiando un fichero.
 - La explicación de cada opción aparece abajo con una fuente más pequeña que la de las opciones; en las opciones con varios valores, una explicación general va seguida de una línea y de la explicación del valor elegido (solo este segundo texto cambia de tamaño de fuente para caber).
 - Se revisaron y acortaron los textos de las opciones.
