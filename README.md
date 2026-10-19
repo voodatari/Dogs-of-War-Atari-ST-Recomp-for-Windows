@@ -1,5 +1,10 @@
 # Dogs of War Atari ST Recomp for Windows
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=bngajk3MZKU"><img src="docs/screenshot.jpg" alt="Dogs of War running with the port / Dogs of War funcionando con el port" width="480"></a><br>
+  <a href="https://www.youtube.com/watch?v=bngajk3MZKU">Gameplay video / Vídeo de gameplay</a>
+</p>
+
 > **Where things are** — `source/`: the complete C source (the game translated to C in `source/generated/`, the machine in `source/runtime/`, the Windows program in `source/host/`; build it with `source/build.bat`, see `source/README.md`).
 > The ready-to-run program is on the **[Releases](https://github.com/voodatari/Dogs-of-War-Atari-ST-Recomp-for-Windows/releases)** page: a zip with `dowport.exe`, `data/languages/`, `shaders/`, `music/`, `assets/` and `default.json`. The zip already includes the game file `data\FILES\DOW`.
 
