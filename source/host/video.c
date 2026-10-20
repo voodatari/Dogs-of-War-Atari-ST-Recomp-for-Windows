@@ -1045,7 +1045,11 @@ void video_draw(void) {
                 if (!prog_ext || strcmp(prog_ext_name, vcfg.external)) {
                     if (prog_ext)
                         p_glDeleteProgram(prog_ext);
+                    double t_compile = now_s();
                     prog_ext = load_external(ext_paths[i]);
+                    if (now_s() - t_compile > 0.1)
+                        host_log_file("shader %s: loading and compiling took %.0f ms", ext_names[i],
+                                      (now_s() - t_compile) * 1000.0);
                     snprintf(prog_ext_name, sizeof prog_ext_name, "%s", vcfg.external);
                 }
                 if (!prog_ext) {

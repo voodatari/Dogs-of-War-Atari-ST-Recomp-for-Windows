@@ -445,8 +445,15 @@ static void mix_mp3(float *mix, int n, const int16_t *arr, int mfr, int press) {
 /* With the menu open the game is paused but the MP3 music goes on (the chip music needs the game to run, so it is
  * silent). */
 static double paused_audio_next = 0;
+/* A pause that has no music to play (chip music, effects only) must not cut the sound off with a step and leave the
+ * device with an empty buffer (that was heard as a click and counted as a "gap"): the last frame sent fades out in 10
+ * ms and silence goes on being sent at the real-time rate; after the pause the first 5 ms of audio fade in. */
+#define PAUSE_FADE_OUT 441
+#define PAUSE_FADE_IN  220
+static int16_t last_audio_frame[2];
+static int pause_fade_left = 0, fade_in_left = 0, silent_pause = 0;
 static void audio_paused(void) {
-    if (!audio_on || !mp3_on || !cfg.audio) {
+    if (!audio_on || !cfg.audio) {
         paused_audio_next = 0;
         return;
     }
@@ -454,9 +461,7 @@ static void audio_paused(void) {
     if (paused_audio_next < now - 0.1)
         paused_audio_next = now;
     int mfr = 0;
-    const int16_t *arr = music_get(music, pb_song, &mfr);
-    if (!arr)
-        return;
+    const int16_t *arr = mp3_on ? music_get(music, pb_song, &mfr) : NULL;
     while (paused_audio_next <= now) {
         static float mix[8192 * 2];
         static int16_t pcm[8192 * 2];
@@ -464,16 +469,25 @@ static void audio_paused(void) {
         if (n > 8000)
             n = 8000;
         memset(mix, 0, sizeof(float) * (size_t)n * 2);
-        mix_mp3(mix, n, arr, mfr, 0);
-        if (pb_done && pend_song != -2) {
-            int nx = pend_song;
-            pb_reset(nx);
-            break;
-        }
-        for (int i = 0; i < n * 2; i++) {
-            float v = mix[i] * (float)vol;
-            v = v < -1.0f ? -1.0f : v > 1.0f ? 1.0f : v;
-            pcm[i] = (int16_t)(v * 32767.0f);
+        if (arr) {
+            mix_mp3(mix, n, arr, mfr, 0);
+            if (pb_done && pend_song != -2) {
+                int nx = pend_song;
+                pb_reset(nx);
+                break;
+            }
+            for (int i = 0; i < n * 2; i++) {
+                float v = mix[i] * (float)vol;
+                v = v < -1.0f ? -1.0f : v > 1.0f ? 1.0f : v;
+                pcm[i] = (int16_t)(v * 32767.0f);
+            }
+        } else { /* nothing to play: fade out the last frame sent, then silence */
+            silent_pause = 1;
+            for (int i = 0; i < n; i++) {
+                float g = pause_fade_left > 0 ? (float)pause_fade_left-- / PAUSE_FADE_OUT : 0.0f;
+                pcm[2 * i] = (int16_t)(last_audio_frame[0] * g);
+                pcm[2 * i + 1] = (int16_t)(last_audio_frame[1] * g);
+            }
         }
         audio_push(cfg.audio, pcm, n);
         paused_audio_next += 0.02;
@@ -561,6 +575,15 @@ static void audio_chunk(void) {
         float v = mix[i] * (float)vol;
         v = v < -1.0f ? -1.0f : v > 1.0f ? 1.0f : v;
         pcm[i] = (int16_t)(v * 32767.0f);
+    }
+    for (int i = 0; i < n && fade_in_left > 0; i++, fade_in_left--) { /* coming back from a silent pause */
+        float g = 1.0f - (float)fade_in_left / PAUSE_FADE_IN;
+        pcm[2 * i] = (int16_t)(pcm[2 * i] * g);
+        pcm[2 * i + 1] = (int16_t)(pcm[2 * i + 1] * g);
+    }
+    if (n > 0) {
+        last_audio_frame[0] = pcm[2 * (n - 1)];
+        last_audio_frame[1] = pcm[2 * (n - 1) + 1];
     }
     if (cfg.audio)
         audio_push(cfg.audio, pcm, n);
@@ -1029,11 +1052,17 @@ static int handle_event(const Ev *e) {
             break;
         }
         case EV_PAUSE:
-            if (e->a)
+            if (e->a) {
+                if (!paused) {
+                    pause_fade_left = PAUSE_FADE_OUT;
+                    silent_pause = 0;
+                }
                 paused = 1;
-            else {
+            } else {
                 if (paused)
                     set_rate(clock_rate, -(tvf() + lead - (double)tos.vbl));
+                if (paused && silent_pause)
+                    fade_in_left = PAUSE_FADE_IN;
                 paused = 0;
             }
             break;

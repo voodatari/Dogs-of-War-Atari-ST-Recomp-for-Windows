@@ -27,6 +27,7 @@ struct AudioOut {
     uint8_t *ring;
     size_t head, len;
     int underruns, drops;
+    double last_push_t; /* when the emulation thread last gave audio (to explain a gap) */
     long pushed;
 #ifdef _WIN32
     CRITICAL_SECTION cs;
@@ -102,10 +103,14 @@ void audio_push(AudioOut *a, const int16_t *stereo, int frames) {
         a->ring[(tail + i) % RING_BYTES] = s[i];
     a->len += n;
     a->pushed += (long)n;
+    a->last_push_t = now_s();
     size_t target = bytes_for(a, a->target_ms);
     /* too full: trims the oldest data down to the target */
     if (a->len > target * 3) {
         size_t over = (a->len - target) & ~(size_t)3;
+        if (a->drops < 40)
+            host_log_file("audio: buffer trimmed when pushing (it held %.0f ms, target %.0f ms: %.0f ms discarded)",
+                          (double)a->len / 4.0 / a->fs * 1000.0, a->target_ms, (double)over / 4.0 / a->fs * 1000.0);
         ring_drop(a, over);
         a->drops++;
     }
@@ -140,8 +145,9 @@ static void fill(AudioOut *a, int16_t *dst, int frames) {
         a->started = 0;
         a->underruns++;
         if (a->underruns <= 40)
-            host_log_file("audio: gap no. %d (the buffer ran empty: %d samples missing)", a->underruns,
-                          (int)((need - n) / 4));
+            host_log_file("audio: gap no. %d (the buffer ran empty: %d samples missing; the emulation thread last gave "
+                          "audio %.0f ms ago)",
+                          a->underruns, (int)((need - n) / 4), (now_s() - a->last_push_t) * 1000.0);
         goto done;
     }
     {
@@ -149,6 +155,10 @@ static void fill(AudioOut *a, int16_t *dst, int frames) {
         if (err_ms > 150.0) {
             size_t cut = (a->len - target - bytes_for(a, 60.0)) & ~(size_t)3;
             if ((long)cut > 0) {
+                if (a->drops < 40)
+                    host_log_file(
+                        "audio: buffer trimmed while playing (it held %.0f ms, target %.0f ms: %.0f ms discarded)",
+                        (double)a->len / 4.0 / a->fs * 1000.0, a->target_ms, (double)cut / 4.0 / a->fs * 1000.0);
                 ring_drop(a, cut);
                 a->drops++;
                 err_ms = 60.0;

@@ -2,6 +2,11 @@
 
 This file lists, in order, the steps that led to the current version. Dates are those of the work sessions (2026). The project started as an analysis of the original game and went through three technical stages before reaching its present form: a prototype that ran the game on a 68000 emulator library inside a Python program, a hybrid with a native core, and the current **all-C port in which the whole game is translated to C**. Releases are numbered: **1.0** (2026-10-19) was the first public one and **1.1** (2026-10-20) the current one; the steps before 1.0 are listed by date.
 
+## Version 1.1.2 (2026-10-20)
+- **Graphics pack `mod`**: new `hud_left.png` and `hud_right.png` (the status panels at both sides of the screen) with a Charlie Sheen and Dolph Lundgren cameo.
+- **Audio when the game is paused**: opening the options menu while no MP3 music was playing (MP3 off, or a song with only chip music) cut the sound with a step and left the audio device with an empty buffer, which was heard as a click and logged as `audio: gap no. 1 (the buffer ran empty: 145 samples missing)`. Now the last sound fades out in 10 ms, silence is sent while the menu is open, and the sound fades in over 5 ms when the game resumes.
+- **Better diagnostics in `error.log`** for the audio glitches that could not be reproduced: every buffer trim says how much audio it held and discarded, a gap says how long ago the emulation thread last gave audio, and a shader that takes more than 100 ms to load and compile is logged.
+
 ## Version 1.1.1 (2026-10-20) – the Windows code of the program reorganised and documented
 The Windows part of the program (`source/host`) was reorganised and documented; **the program behaves exactly as in 1.1** (same game code, same options, same files). The only visible differences are in the diagnostic files: the corruption reports are now written as `crash<n>_start.dows`, `crash<n>_inputs.txt` and `crash<n>_end.dows` (they used Spanish names) and a few log lines are in English.
 - Formatted with `clang-format` (`source/host/.clang-format`): one statement per line instead of dozens on a line (6,900 lines became about 18,000), trailing comments moved above the code they explain.
@@ -107,6 +112,11 @@ The program is a single native C executable. Nothing is interpreted and nothing 
 # Registro de cambios – Dogs of War, port para Windows a 60 fps
 
 Este fichero enumera, por orden, los pasos que llevaron a la versión actual. Las fechas son las de las sesiones de trabajo (2026). El proyecto empezó como un análisis del juego original y pasó por tres etapas técnicas hasta su forma actual: un prototipo que ejecutaba el juego con una biblioteca de emulación 68000 dentro de un programa en Python, un híbrido con núcleo nativo y el **port actual, todo en C, en el que el juego completo está traducido a C**. Las versiones publicadas están numeradas: la **1.0** (2026-10-19) fue la primera pública y la **1.1** (2026-10-20) es la actual; los pasos anteriores a la 1.0 se listan por fecha.
+
+## Versión 1.1.2 (2026-10-20)
+- **Pack gráfico `mod`**: nuevos `hud_left.png` y `hud_right.png` (los paneles laterales de la pantalla) con un cameo de Charlie Sheen y Dolph Lundgren.
+- **Audio cuando el juego está en pausa**: abrir el menú de opciones sin que sonara música MP3 (MP3 desactivado, o una canción con solo música del chip) cortaba el sonido en seco y dejaba vacío el búfer del dispositivo de audio, lo que se oía como un chasquido y se anotaba como `audio: gap no. 1 (the buffer ran empty: 145 samples missing)`. Ahora el último sonido se desvanece en 10 ms, mientras el menú está abierto se envía silencio y al reanudar el sonido entra con un fundido de 5 ms.
+- **Mejor diagnóstico en `error.log`** para los saltos de audio que no se pudieron reproducir: cada recorte del búfer dice cuánto audio tenía y cuánto descartó, un hueco dice hace cuánto tiempo el hilo de emulación entregó audio por última vez, y se anota un shader que tarde más de 100 ms en cargarse y compilarse.
 
 ## Versión 1.1.1 (2026-10-20) – el código de Windows del programa, reorganizado y documentado
 La parte de Windows del programa (`source/host`) se reorganizó y documentó; **el programa se comporta exactamente como en la 1.1** (mismo código del juego, mismas opciones, mismos ficheros). Las únicas diferencias visibles están en los ficheros de diagnóstico: los informes de corrupción se escriben ahora como `crash<n>_start.dows`, `crash<n>_inputs.txt` y `crash<n>_end.dows` (tenían nombres en español) y algunas líneas del registro están en inglés.
