@@ -1,8 +1,8 @@
 # Changelog – Dogs of War, Windows port at 60 fps
 
-This file lists, in order, the steps that led to the current version. Dates are those of the work sessions (2026). The project started as an analysis of the original game and went through three technical stages before reaching its present form: a prototype that ran the game on a 68000 emulator library inside a Python program, a hybrid with a native core, and the current **all-C port in which the whole game is translated to C**. Versions are named after what they were; there are no version numbers.
+This file lists, in order, the steps that led to the current version. Dates are those of the work sessions (2026). The project started as an analysis of the original game and went through three technical stages before reaching its present form: a prototype that ran the game on a 68000 emulator library inside a Python program, a hybrid with a native core, and the current **all-C port in which the whole game is translated to C**. Releases are numbered: **1.0** (2026-10-19) was the first public one and **1.1** (2026-10-20) the current one; the steps before 1.0 are listed by date.
 
-## Update (2026-10-20) – twin-stick control, interactive gamepad picture, resolution-independent CRT mask
+## Version 1.1 (2026-10-20) – twin-stick control, interactive gamepad picture, resolution-independent CRT mask
 Main feature, switchable in **Controls → Twin-stick: right stick aims** (option `pad_dual_stick`, on by default):
 - **Left stick** moves the soldier as always. **Right stick** (8 directions, 45-degree sectors, dead zone 40 %) sets the direction he **faces and shoots**, whatever way the left stick moves him: you can walk up while firing to the right, or strafe and shoot diagonally. When the right stick is released the soldier goes back to facing the way he walks.
 - While the right stick is pushed, the original "fire without a direction = stand still" lock is released, so the left stick can start moving him while he keeps shooting.
@@ -16,7 +16,7 @@ Main feature, switchable in **Controls → Twin-stick: right stick aims** (optio
 - **Keys for typing names**: the high-score name entry ignored some keys because the keyboard table lacked **V** and **Z** (Z was also swallowed as the second fire key), Backspace, Delete and the punctuation keys. They are now passed to the game (Z only on the screens that take typing, so it still works as fire in the mission).
 - Development helpers (only with `DOW_TEST=1`): `DOW_AIM=<J_* bits>` + `DOW_AIM_FROM` / `DOW_AIM_TO` push the right stick by script; `DOW_AUTOMISSION=<mission value>` goes from the map into that mission by itself and plays a fixed left/right-stick script, to read the facing byte in the `DOW_PLAYERLOG` log (`face36`).
 
-## Current version – release candidate, all C (2026-10-19)
+## Version 1.0 (2026-10-19) – all C
 The program is a single native C executable. Nothing is interpreted and nothing needs Python.
 
 **Start-up and files**
@@ -50,9 +50,9 @@ The program is a single native C executable. Nothing is interpreted and nothing 
 - The executable and its window have an icon (the soldier of `ico.png`, with its transparency, in several sizes).
 - The Python port was abandoned (it meant double work) and the program no longer uses Python for anything; its tools were archived outside the project.
 - README rewritten and organised, in English and Spanish; this changelog; a README for the source code.
-- Folders: `source\` (all the C source), `build\` (the runnable program). The release-candidate repository keeps only what is needed to build and run.
+- Folders: `source\` (all the C source), `build\` (the runnable program). The repository keeps only what is needed to build and run.
 
-## 2026-10-14 – Release-candidate preparation (still two cores: C and Python)
+## 2026-10-14 – Preparing the first release (still two cores: C and Python)
 - Controls redefinable (keys and gamepad buttons), with a *Restore default options* action that reloads `default.json`.
 - *Music pack* option: each subfolder of `music\` is a bank of MP3 songs.
 - Frame interpolation can be turned off; *Game speed* option that matches the game's logic rate to the screen refresh; pad shortcuts (L2 hold position, R1/L1 next/previous weapon).
@@ -96,9 +96,9 @@ The program is a single native C executable. Nothing is interpreted and nothing 
 
 # Registro de cambios – Dogs of War, port para Windows a 60 fps
 
-Este fichero enumera, por orden, los pasos que llevaron a la versión actual. Las fechas son las de las sesiones de trabajo (2026). El proyecto empezó como un análisis del juego original y pasó por tres etapas técnicas hasta su forma actual: un prototipo que ejecutaba el juego con una biblioteca de emulación 68000 dentro de un programa en Python, un híbrido con núcleo nativo y el **port actual, todo en C, en el que el juego completo está traducido a C**. Las versiones se nombran por lo que fueron; no hay números de versión.
+Este fichero enumera, por orden, los pasos que llevaron a la versión actual. Las fechas son las de las sesiones de trabajo (2026). El proyecto empezó como un análisis del juego original y pasó por tres etapas técnicas hasta su forma actual: un prototipo que ejecutaba el juego con una biblioteca de emulación 68000 dentro de un programa en Python, un híbrido con núcleo nativo y el **port actual, todo en C, en el que el juego completo está traducido a C**. Las versiones publicadas están numeradas: la **1.0** (2026-10-19) fue la primera pública y la **1.1** (2026-10-20) es la actual; los pasos anteriores a la 1.0 se listan por fecha.
 
-## Actualización (2026-10-20) – control de doble stick, imagen interactiva del mando y máscara CRT independiente de la resolución
+## Versión 1.1 (2026-10-20) – control de doble stick, imagen interactiva del mando y máscara CRT independiente de la resolución
 Función principal, que se activa y desactiva en **Controles → Doble stick: el derecho apunta** (opción `pad_dual_stick`, activada por defecto):
 - El **stick izquierdo** mueve al soldado como siempre. El **stick derecho** (8 direcciones, sectores de 45°, zona muerta del 40 %) fija la dirección en que **mira y dispara**, sea cual sea la dirección en que lo mueva el izquierdo: puedes andar hacia arriba disparando a la derecha, o desplazarte lateralmente disparando en diagonal. Al soltar el derecho, el soldado vuelve a mirar hacia donde camina.
 - Mientras el derecho está pulsado se suspende el bloqueo original «disparar sin dirección = quedarse quieto», de modo que el izquierdo puede empezar a moverlo sin que deje de disparar.
@@ -112,7 +112,7 @@ Función principal, que se activa y desactiva en **Controles → Doble stick: el
 - **Teclas para escribir nombres**: la entrada del nombre en los récords ignoraba algunas teclas porque la tabla del teclado no tenía la **V** ni la **Z** (la Z además se la tragaba como segundo botón de disparo), Retroceso, Supr ni las teclas de puntuación. Ahora se pasan al juego (la Z solo en las pantallas que piden texto, así que sigue funcionando como disparo en la misión).
 - Ayudas de desarrollo (solo con `DOW_TEST=1`): `DOW_AIM=<bits J_*>` + `DOW_AIM_FROM` / `DOW_AIM_TO` pulsan el stick derecho por guion; `DOW_AUTOMISSION=<valor de la misión>` va del mapa a esa misión por sí solo y reproduce un guion fijo de stick izquierdo y derecho, para leer el byte de dirección en el registro de `DOW_PLAYERLOG` (`face36`).
 
-## Versión actual – candidata a lanzamiento, todo en C (2026-10-19)
+## Versión 1.0 (2026-10-19) – todo en C
 El programa es un único ejecutable nativo en C. No se interpreta nada y no se necesita Python.
 
 **Arranque y ficheros**
@@ -146,9 +146,9 @@ El programa es un único ejecutable nativo en C. No se interpreta nada y no se n
 - El ejecutable y su ventana tienen un icono (el soldado de `ico.png`, con su transparencia, en varios tamaños).
 - El port en Python se abandonó (suponía doble trabajo) y el programa ya no usa Python para nada; sus herramientas se archivaron fuera del proyecto.
 - README reescrito y ordenado, en inglés y en español; este registro de cambios; un README del código fuente.
-- Carpetas: `source\` (todo el código fuente en C), `build\` (el programa ejecutable). El repositorio de la versión candidata solo conserva lo necesario para compilar y ejecutar.
+- Carpetas: `source\` (todo el código fuente en C), `build\` (el programa ejecutable). El repositorio solo conserva lo necesario para compilar y ejecutar.
 
-## 2026-10-14 – Preparación de la versión candidata (todavía con dos núcleos: C y Python)
+## 2026-10-14 – Preparación de la primera versión (todavía con dos núcleos: C y Python)
 - Controles redefinibles (teclas y botones del mando), con una acción *Restaurar opciones por defecto* que recarga `default.json`.
 - Opción *Banco de música*: cada subcarpeta de `music\` es un banco de canciones MP3.
 - La interpolación de fotogramas se puede desactivar; opción *Velocidad del juego* que iguala el ritmo lógico del juego al refresco de pantalla; atajos del mando (L2 mantener posición, R1/L1 arma siguiente/anterior).
