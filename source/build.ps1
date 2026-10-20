@@ -84,6 +84,6 @@ if (Test-Path $png) {
 $link = ($ccArgs0 + @('-O2', '-o', $exe) + $objs + $res + $libs + @('-mwindows')) | ForEach-Object { Q $_ }
 $p = Start-Process -FilePath $ccExe -ArgumentList $link -NoNewWindow -PassThru; $null = $p.Handle; $p.WaitForExit()
 if ($p.ExitCode -ne 0) { Write-Host 'link failed'; exit 1 }
-Get-ChildItem $Out -Filter 'dispatch_*.lib' -ErrorAction SilentlyContinue | Remove-Item -ErrorAction SilentlyContinue
+Get-ChildItem $Out -Filter 'dispatch*.lib' -ErrorAction SilentlyContinue | Remove-Item -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $Out 'dowport.pdb') -ErrorAction SilentlyContinue
 Write-Host ("compiled {0} ({1} files) in {2:N1} s" -f $exe, $todo.Count, ((Get-Date) - $t0).TotalSeconds)

@@ -139,11 +139,13 @@ static const char *FRAG_CRT =
 "    float lum = dot(c, vec3(0.299, 0.587, 0.114));\n"
 "    float beam = mix(0.55, 1.0, lum);\n"
 "    float sl = 1.0 - p_scan * pow(clamp(abs(d) * 2.0, 0.0, 1.0), 2.0) * (1.6 - beam);\n"
-"    float px = floor(gl_FragCoord.x);\n"
-"    vec3 m = vec3(1.0);\n"
-"    float ph = mod(px, 3.0);\n"
-"    vec3 mk = vec3(ph < 1.0 ? 1.0 : 0.35, (ph >= 1.0 && ph < 2.0) ? 1.0 : 0.35, ph >= 2.0 ? 1.0 : 0.35);\n"
-"    m = mix(vec3(1.0), mk * 1.35, p_mask);\n"
+"    float mkz = max(1.0, outSize.y / 1080.0);\n"
+"    float a0 = (gl_FragCoord.x - 0.5) / mkz, b0 = (gl_FragCoord.x + 0.5) / mkz;\n"
+"    vec3 ch = vec3(0.0, 1.0, 2.0);\n"
+"    vec3 ia = floor(a0 / 3.0) + clamp(a0 - 3.0 * floor(a0 / 3.0) - ch, 0.0, 1.0);\n"
+"    vec3 ib = floor(b0 / 3.0) + clamp(b0 - 3.0 * floor(b0 / 3.0) - ch, 0.0, 1.0);\n"
+"    vec3 mk = mix(vec3(0.35), vec3(1.0), (ib - ia) * mkz);\n"
+"    vec3 m = mix(vec3(1.0), mk * 1.35, p_mask);\n"
 "    c = c * sl * m * p_bright;\n"
 "    vec2 v = q * 2.0 - 1.0; c *= 1.0 - p_vig * dot(v, v) * 0.35;\n"
 "    fragColor = vec4(c, 1.0);\n"
@@ -391,21 +393,21 @@ void video_draw(void) {
     int x, y, w, h; video_rect(&x, &y, &w, &h); glViewport(x, y, w, h);
     p_glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, tex_main);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, vcfg.filter == 0 ? GL_NEAREST : GL_LINEAR); glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, vcfg.filter == 0 ? GL_NEAREST : GL_LINEAR);
-    int done = 0;
+    int done = 0; float out_h = (float)h; { const char *mh = getenv("DOW_MASKH"); if (mh && getenv("DOW_TEST")) out_h = (float)atof(mh); }          /* test: pretend the picture is that tall (checks the resolution-independent phosphor mask) */
     if (vcfg.external[0]) {
         for (int i = 0; i < n_ext && !done; i++) if (!strcmp(ext_names[i], vcfg.external)) {
             if (!prog_ext || strcmp(prog_ext_name, vcfg.external)) { if (prog_ext) p_glDeleteProgram(prog_ext); prog_ext = load_external(ext_paths[i]); snprintf(prog_ext_name, sizeof prog_ext_name, "%s", vcfg.external); }
             if (!prog_ext) { snprintf(err_, sizeof err_, "External shader %s failed", vcfg.external); has_err = 1; vcfg.external[0] = 0; break; }
             GLuint p = prog_ext; p_glUseProgram(p); static const float I[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
             GLint l = p_glGetUniformLocation(p, "MVPMatrix"); if (l >= 0) p_glUniformMatrix4fv(l, 1, GL_FALSE, I);
-            u1i(p, "Texture", 0); u2f(p, "InputSize", 320.0f, 200.0f); u2f(p, "TextureSize", 320.0f, 200.0f); u2f(p, "OutputSize", (float)w, (float)h); u1i(p, "FrameCount", frame_n); u1i(p, "FrameDirection", 1);
+            u1i(p, "Texture", 0); u2f(p, "InputSize", 320.0f, 200.0f); u2f(p, "TextureSize", 320.0f, 200.0f); u2f(p, "OutputSize", (float)w, out_h); u1i(p, "FrameCount", frame_n); u1i(p, "FrameDirection", 1);
             for (int k = 0; k < n_ext_par; k++) u1f(p, ext_par_name[k], ext_par[k]);
             draw_quad_external(p); done = 1;
         }
     }
     if (!done) {
         GLuint p = builtin(preset_shader()); if (p) {
-            p_glUseProgram(p); u1i(p, "tex", 0); u2f(p, "srcSize", 320.0f, 200.0f); u2f(p, "texSize", (float)tex_w_, (float)tex_h_); u2f(p, "outSize", (float)w, (float)h);
+            p_glUseProgram(p); u1i(p, "tex", 0); u2f(p, "srcSize", 320.0f, 200.0f); u2f(p, "texSize", (float)tex_w_, (float)tex_h_); u2f(p, "outSize", (float)w, out_h);
             u1f(p, "frame", (float)frame_n); u1i(p, "smooth_mode", vcfg.filter);
             u1f(p, "p_scan", vcfg.p.p_scan); u1f(p, "p_mask", vcfg.p.p_mask); u1f(p, "p_curv", vcfg.p.p_curv); u1f(p, "p_bright", vcfg.p.p_bright); u1f(p, "p_vig", vcfg.p.p_vig); u1f(p, "p_bloom", vcfg.p.p_bloom);
             draw_quad_builtin(p);

@@ -27,6 +27,16 @@ int kbd_scancode(int vk);
 int kbd_joy_keys(int *vks);                        /* direction and fire keys that must be polled (Ctrl with both variants) */
 
 /* ---- redefinable gamepad buttons (the same layout for both pads). One button = one XInput bit; the triggers are PB_LT / PB_RT. */
+#define XB_START 0x0010                            /* XInput button bits (the D-pad bits stay in input.c) */
+#define XB_BACK 0x0020
+#define XB_L3 0x0040
+#define XB_R3 0x0080
+#define XB_LB 0x0100
+#define XB_RB 0x0200
+#define XB_A 0x1000
+#define XB_B 0x2000
+#define XB_X 0x4000
+#define XB_Y 0x8000
 #define PB_LT 0x10000
 #define PB_RT 0x20000
 enum { PBA_FIRE, PBA_FIRE2, PBA_HOLD, PBA_WNEXT, PBA_WPREV, PBA_ROCKET, PBA_GRENADE, PBA_MENU, PBA_EXIT, PBA_COUNT };
@@ -36,6 +46,7 @@ const char *pad_act_label(int a);
 const char *pad_act_hint(int a);
 void pad_set_bind(int act, int mask);              /* mask = 0 leaves it unassigned; if another action had the button, it is taken away from it */
 void pad_button_name(int mask, char *out, size_t n);
+int  pad_action_of(int mask);                      /* action (PBA_*) assigned to that button, or -1 */
 int  pad_assignable(int mask);                     /* buttons that can be assigned (not the D-pad nor the sticks) */
 
 /* ---- defaults and saving into the options */
@@ -44,7 +55,10 @@ void input_cfg_load(void);                         /* reads key_* and pad_* from
 void input_cfg_save(void);
 
 enum { PA_ROCKET = 1, PA_GRENADE = 2, PA_WBACK = 4, PA_MENU = 8, PA_EXIT = 16 };
-typedef struct PadRead { int st; int wnext; int acts; int hold; int raw; } PadRead;     /* joystick state, next weapon pressed, actions pressed, hold position, and the raw buttons (XInput bits + PB_LT/PB_RT) */
+typedef struct PadRead { int st; int wnext; int acts; int hold; int raw; int aim; } PadRead;     /* joystick state, next weapon pressed, actions pressed, hold position, the raw buttons (XInput bits + PB_LT/PB_RT) and
+                                                                                                  the direction of the right stick (J_* bits, 8 directions; 0 = released or twin-stick off) */
+extern int pad_dual_stick;                       /* twin-stick: the left stick moves, the right stick aims (and fires) */
+extern int pad_aim_autofire;                     /* the right stick also holds the fire button while it is pushed */
 int  pads_read(PadRead out[2]);          /* number of pads (0..2) */
 void pads_names(char *out, size_t n);
 int  pads_count(void);

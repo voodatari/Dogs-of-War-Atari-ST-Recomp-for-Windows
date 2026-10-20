@@ -135,6 +135,10 @@ void call_dynamic(uint32_t pc);                    /* runs the routine that star
 void rte_return(void);                             /* RTE: ver machine.c */
 #define RTE()          do { rte_return(); return; } while (0)
 
+/* Twin-stick aiming (host): the facing/fire direction of a player (a4 = his structure) given the direction the game worked out (d7: 1 up, 2 down, 4 left, 8 right).
+   Returns the right-stick direction while it is pushed, else d7 unchanged. */
+uint32_t host_aim(uint32_t a4, uint32_t d7);
+
 /* ---- handing control to the host ---- */
 void yield_to_host(int rc);                        /* saves the registers in g_cpu, returns to core_run() and reloads them on resume */
 #define BUDGET_CHECK(addr) do { if (--g_cpu.budget < 0) { g_cpu.pc = (addr); yield_to_host(RC_BUDGET); } } while (0)

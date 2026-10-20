@@ -64,7 +64,10 @@ int kbd_scancode(int vk) {
     case VK_RETURN: case 0x10D: return 0x1C; case VK_SPACE: return 0x39; case 'P': return 0x19;
     case 'Q': return 0x10; case 'W': return 0x11; case 'E': return 0x12; case 'R': return 0x13; case 'T': return 0x14; case 'Y': return 0x15; case 'U': return 0x16; case 'I': return 0x17; case 'O': return 0x18;
     case 'A': return 0x1E; case 'S': return 0x1F; case 'D': return 0x20; case 'F': return 0x21; case 'G': return 0x22; case 'H': return 0x23; case 'J': return 0x24; case 'K': return 0x25; case 'L': return 0x26;
-    case 'X': return 0x2D; case 'C': return 0x2E; case 'B': return 0x30; case 'N': return 0x31; case 'M': return 0x32;
+    case 'Z': return 0x2C; case 'X': return 0x2D; case 'C': return 0x2E; case 'V': return 0x2F; case 'B': return 0x30; case 'N': return 0x31; case 'M': return 0x32;
+    case VK_BACK: return 0x0E; case VK_DELETE: return 0x53;                                                 /* the rest of the keys the high-score name entry can use (Atari ST scancodes) */
+    case 0xBD: return 0x0C; case 0xBB: return 0x0D; case 0xBC: return 0x33; case 0xBE: return 0x34; case 0xBF: return 0x35;       /* - = , . / */
+    case 0xBA: return 0x27; case 0xDE: return 0x28; case 0xDB: return 0x1A; case 0xDD: return 0x1B; case 0xDC: return 0x2B; case 0xC0: return 0x29;   /* ; ' [ ] \ ` */
     case VK_F1: return 0x3B; case VK_F2: return 0x3C; case VK_F3: return 0x3D; case VK_F4: return 0x3E; case VK_F5: return 0x3F;
     }
     return 0;
@@ -76,16 +79,6 @@ int pad_bind[PBA_COUNT];
 #define XB_DOWN 0x0002
 #define XB_LEFT 0x0004
 #define XB_RIGHT 0x0008
-#define XB_START 0x0010
-#define XB_BACK 0x0020
-#define XB_L3 0x0040
-#define XB_R3 0x0080
-#define XB_LB 0x0100
-#define XB_RB 0x0200
-#define XB_A 0x1000
-#define XB_B 0x2000
-#define XB_X 0x4000
-#define XB_Y 0x8000
 static const struct { int mask; const char *nm; } PBN[] = { { 0, "none" }, { XB_A, "A" }, { XB_B, "B" }, { XB_X, "X" }, { XB_Y, "Y" }, { XB_LB, "LB" }, { XB_RB, "RB" }, { PB_LT, "LT" }, { PB_RT, "RT" },
     { XB_BACK, "Back" }, { XB_START, "Start" }, { XB_L3, "L3" }, { XB_R3, "R3" } };
 #define NPBN ((int)(sizeof PBN / sizeof *PBN))
@@ -103,17 +96,21 @@ static const struct { const char *cfg, *label, *hint; int def; } PA[PBA_COUNT] =
 const char *pad_act_label(int a) { return tr(PA[a].label); }
 const char *pad_act_label_id(int a) { return PA[a].label; }
 const char *pad_act_hint(int a) { return PA[a].hint; }
+int pad_action_of(int mask) { if (mask) for (int a = 0; a < PBA_COUNT; a++) if (pad_bind[a] == mask) return a; return -1; }
 int pad_assignable(int mask) { for (int i = 1; i < NPBN; i++) if (PBN[i].mask == mask) return 1; return 0; }
 void pad_set_bind(int act, int mask) { if (mask) for (int a = 0; a < PBA_COUNT; a++) if (pad_bind[a] == mask) pad_bind[a] = 0; pad_bind[act] = mask; }
 void pad_button_name(int mask, char *out, size_t n) { for (int i = 0; i < NPBN; i++) if (PBN[i].mask == mask) { snprintf(out, n, "%s", mask ? PBN[i].nm : tr("key.(none)")); return; } snprintf(out, n, "?"); }
 
+int pad_dual_stick = 1, pad_aim_autofire = 1;
 void input_defaults(void) { for (int a = 0; a < KA_COUNT; a++) key_bind[a] = KA[a].def; for (int a = 0; a < PBA_COUNT; a++) pad_bind[a] = PA[a].def; }
 void input_cfg_load(void) {
     input_defaults();
+    pad_dual_stick = cfg_bool("pad_dual_stick", 1); pad_aim_autofire = cfg_bool("pad_aim_autofire", 1);
     for (int a = 0; a < KA_COUNT; a++) if (cfg_has(KA[a].cfg)) key_bind[a] = kbd_norm_vk((int)cfg_num(KA[a].cfg, KA[a].def));
     for (int a = 0; a < PBA_COUNT; a++) if (cfg_has(PA[a].cfg)) { const char *v = cfg_str(PA[a].cfg, ""); for (int i = 0; i < NPBN; i++) if (!_stricmp(v, PBN[i].nm)) pad_bind[a] = PBN[i].mask; }
 }
 void input_cfg_save(void) {
+    cfg_set_bool("pad_dual_stick", pad_dual_stick); cfg_set_bool("pad_aim_autofire", pad_aim_autofire);
     for (int a = 0; a < KA_COUNT; a++) cfg_set_num(KA[a].cfg, key_bind[a]);
     for (int a = 0; a < PBA_COUNT; a++) { const char *nm = "none"; for (int i = 0; i < NPBN; i++) if (PBN[i].mask == pad_bind[a]) nm = PBN[i].nm; cfg_set_str(PA[a].cfg, nm); }
 }
@@ -124,6 +121,17 @@ typedef struct { DWORD dwPacketNumber; XPad Gamepad; } XState;
 typedef DWORD (WINAPI *PFN_XGetState)(DWORD, XState *);
 static PFN_XGetState xget = NULL; static int xtried = 0;
 static int connected[4]; static double last_poll[4]; static int ncon = 0;
+
+/* Right stick -> one of 8 directions (45-degree sectors, so the diagonals are as easy to hit as the main directions); 0 inside the dead zone. J_UP is stick up (Y positive). */
+static int stick_dir8(int x, int y) {
+    const float DZ = 0.40f * 32768.0f; float fx = (float)x, fy = (float)y;
+    if (fx * fx + fy * fy < DZ * DZ) return 0;
+    float ax = fx < 0 ? -fx : fx, ay = fy < 0 ? -fy : fy, T = 0.41421356f;      /* tan(22.5 degrees) */
+    int h = ay < T * ax, v = ax < T * ay, r = 0;                                /* horizontal / vertical sector; neither = diagonal */
+    if (!v) r |= fx < 0 ? J_LEFT : J_RIGHT;
+    if (!h) r |= fy < 0 ? J_DOWN : J_UP;
+    return r;
+}
 
 int pads_count(void) { return ncon; }
 void pads_names(char *out, size_t n) { snprintf(out, n, "%d", ncon); }
@@ -147,6 +155,7 @@ int pads_read(PadRead out[2]) {
         if ((pad_bind[PBA_FIRE] && (raw & pad_bind[PBA_FIRE])) || (pad_bind[PBA_FIRE2] && (raw & pad_bind[PBA_FIRE2]))) st |= J_FIRE;
         if ((st & J_UP) && (st & J_DOWN)) st &= ~(J_UP | J_DOWN);
         if ((st & J_LEFT) && (st & J_RIGHT)) st &= ~(J_LEFT | J_RIGHT);
+        out[idx].aim = pad_dual_stick ? stick_dir8(p->sThumbRX, p->sThumbRY) : 0;
         out[idx].st = st; out[idx].raw = raw; out[idx].acts = 0;
         out[idx].wnext = pad_bind[PBA_WNEXT] && (raw & pad_bind[PBA_WNEXT]) ? 1 : 0; out[idx].hold = pad_bind[PBA_HOLD] && (raw & pad_bind[PBA_HOLD]) ? 1 : 0;
         if (pad_bind[PBA_ROCKET] && (raw & pad_bind[PBA_ROCKET])) out[idx].acts |= PA_ROCKET;
@@ -170,6 +179,7 @@ const char *pad_act_label(int a) { (void)a; return ""; } const char *pad_act_lab
 void pad_set_bind(int a, int m) { (void)a; (void)m; } void pad_button_name(int m, char *o, size_t n) { (void)m; snprintf(o, n, ""); } int pad_assignable(int m) { (void)m; return 0; }
 void input_defaults(void) {} void input_cfg_load(void) {} void input_cfg_save(void) {}
 int pads_read(PadRead out[2]) { (void)out; return 0; }
+int pad_action_of(int m) { (void)m; return -1; }
 int pads_count(void) { return 0; }
 void pads_names(char *o, size_t n) { snprintf(o, n, "0"); }
 #endif

@@ -8,7 +8,7 @@
 #include "audio.h"
 
 enum { EV_QUIT, EV_HZ, EV_LEAD, EV_TICK, EV_GOD, EV_MONEY, EV_FIX, EV_SOUND, EV_VOL, EV_PAUSE, EV_MCH, EV_PAN, EV_MP3, EV_JOY, EV_JOY0, EV_KEY, EV_EXIT,
-       EV_GOSHOP, EV_SAVE, EV_LOAD, EV_RESTART, EV_WPN, EV_QUICK, EV_VOLX, EV_GAMEHZ, EV_HOLD, EV_MUSICDIR };   /* EV_VOLX: a = 0 MP3, 1 chip music, 2 sampled effects, 3 chip effects; b = volume */
+       EV_GOSHOP, EV_SAVE, EV_LOAD, EV_RESTART, EV_WPN, EV_QUICK, EV_VOLX, EV_GAMEHZ, EV_HOLD, EV_MUSICDIR, EV_AIM };   /* EV_AIM: a = player (0, 1), b = right-stick direction (J_* bits) | 0x80 if it also holds fire; EV_VOLX: a = 0 MP3, 1 chip music, 2 sampled effects, 3 chip effects; b = volume */
 
 typedef struct EmuConfig {
     const char *game_dir, *state_path, *music_dir, *save_dir;

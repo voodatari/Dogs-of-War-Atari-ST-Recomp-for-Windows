@@ -41,7 +41,7 @@ This is a **release candidate** of an unofficial, fan-made **native Windows port
 - **Video**: OpenGL output with four aspect modes, three scaling filters, built-in CRT effects (scanlines, phosphor mask, curvature, vignette, glow) and external RetroArch `.glsl` shaders.
 - **Sound**: YM2149 chip synthesis, a multichannel mixer for the sampled effects, stereo panning of effects by on-screen position, per-type volumes, and replacement **MP3 music packs**.
 - **Graphics packs**: every sprite, tile and fixed screen of the game is dumped to editable PNG sheets; a pack of full-colour replacements is drawn instead, with the original animation and interpolation.
-- **Controls**: keyboard and XInput gamepads (two players), fully redefinable, plus pad shortcuts for rocket launcher, grenade and hold position.
+- **Controls**: keyboard and XInput gamepads (two players), fully redefinable, plus pad shortcuts for rocket launcher, grenade and hold position, and an optional **twin-stick** mode (left stick moves, right stick aims and fires).
 - **Saving**: the original game has no saves; the port adds three slots and a "back to the mission map" command.
 - **Fixes** for stutters and glitches that appear only at high frame rates (all can be switched off).
 
@@ -55,7 +55,8 @@ Every key and pad button can be redefined (see below); these are the defaults.
 
 | Action | Keyboard | Gamepad |
 |---|---|---|
-| Move | Cursor keys | Stick or D-pad (fixed) |
+| Move | Cursor keys | Left stick or D-pad (fixed) |
+| Aim and shoot (twin-stick) | – | Right stick, 8 directions: the soldier faces and shoots that way whatever direction he is moving; it also holds fire while pushed (see below) |
 | Fire | Ctrl (left or right), Z | A, right trigger |
 | Next weapon | A | RB |
 | Previous weapon | – | LB (the game only cycles forward; the port jumps straight to the previous category) |
@@ -72,8 +73,14 @@ Every key and pad button can be redefined (see below); these are the defaults.
 
 The first pad is player 1 (added to the keyboard) and the second pad is player 2; pads are detected when plugged in.
 
+**Twin-stick mode** (*Controls → Twin-stick: right stick aims*, on by default; off = the original single-stick control): the left stick moves the soldier and the right stick sets where he **faces and shoots**, in 8 directions (45° sectors, 40 % dead zone), whatever way the left stick is moving him: walk up while firing right, strafe while shooting diagonally… When the right stick is released he faces the way he walks again. While the right stick is pushed the original "fire without a direction = stand still" lock is released, so you can start moving without stopping the fire. *Right stick also fires* (on by default) holds the fire button for you while the right stick is pushed; turn it off to aim with the right stick and fire with the usual button. It only acts during a mission, and it uses pad 1 for player 1 and pad 2 for player 2. *Hold position* (left trigger) still works.
+
 **Redefining**: the *Controls* tab of the options menu shows a picture of the gamepad and the option *Redefine keys and gamepad buttons…*, which opens a window with every action. Select an action and press the new key or pad button: **Esc** cancels, **Delete** leaves it
 unassigned, and a key already used by another action is taken from it. *Restore default controls* resets everything.
+
+**Typing**: on the screens that ask for text (the name in the high-score table) every letter A–Z (including **Z**, which is also the second fire key, and **V**), the digits, Backspace, Delete and the usual punctuation keys are passed to the game.
+
+**The picture of the gamepad** (*Controls* tab) is drawn by the program, not an image file: every box says what that button does *now*, so it follows the buttons you redefine, shows the right stick greyed out when twin-stick is off, lists an action assigned to L3 / R3 under its stick, and is shown in the menu language. It is at its largest in fullscreen.
 
 ## Options menu
 Open it with **Esc** or **Start**; the game is paused while it is open. The options are grouped in **tabs** (the bar under the title). Up/down select an option, left/right change its value, **Enter / A** accepts, **Esc / B / Start** closes.
@@ -87,7 +94,7 @@ Settings are saved in `options.json` when the menu closes.
 | **Sound** | Sound on/off · Volume · Music (MP3) · Music (YM2149F) · Sampled FX · FX (YM2149F) · Multichannel FX · FX stereo panning · MP3 music · Music pack |
 | **Video** | Fullscreen · Aspect ratio · Shader source · Scaling filter · Shader / CRT effect and its controls · Graphics pack |
 | **Motion** | Frame interpolation · Sub-pixel smoothing · Game speed · and, under *Latency*: Fast input polling · Low-latency audio · Audio sync trim |
-| **Controls** | Redefine keys and gamepad buttons (opens a window, with *Restore default controls*) · picture of the gamepad (`assets\controller.png`) |
+| **Controls** | Twin-stick: right stick aims · Right stick also fires · Redefine keys and gamepad buttons (opens a window, with *Restore default controls*) · picture of the gamepad (drawn by the program from the current controls) |
 | **System** | Language · Restore default options (reloads `default.json`) · Credits · Continue · Quit |
 
 ### Languages
@@ -105,6 +112,8 @@ To add a language copy `english.xml`, give the new file a different name, change
   `MVPMatrix`, `Texture`, `InputSize` (320×200), `TextureSize`, `OutputSize`, `FrameCount` and the `#pragma parameter` values are provided. Multi-pass presets (`.glslp`, `.slangp`) are not supported.
 
 ### Shaders and licences
+**Resolution independence.** The phosphor mask of the built-in CRT effects and of every supplied shader is drawn at its original size (3 pixels per phosphor triad) at 1080 lines and grows in proportion to the picture height above that, so the phosphors look the same at 1080p, 1440p, 4K or any resolution in between (below 1080 lines it stays at 3 pixels). Each screen pixel averages the mask over its own area, so a non-integer scale produces no moire. This applies to `fakelottes`, `fakelottes-geom`, `crt-pi` and `fake-CRT-Geom` (the last one: its *Mask Size* parameter is multiplied by the same factor); `crt-nes-mini` has no mask and its scanlines come from the game's own lines, so it needed no change. The scanlines of all of them already follow the game's lines at any resolution. If you add shaders of your own whose mask is measured in screen pixels, scale it by `max(1.0, OutputSize.y / 1080.0)` the same way.
+
 The `.glsl` shaders supplied in `shaders\` were **not written for this program: they come from the RetroArch / libretro shader collection** ([glsl-shaders](https://github.com/libretro/glsl-shaders)), and each one keeps the authorship and licence of its author. Look at the top of every file: for example `crt-pi.glsl` (davej) is under the GNU GPL version 2 or later, and several files give only the author's name and no licence text, so check their upstream licence before redistributing them. The program only loads them at run time, as separate files, and nothing in it is derived from them; the built-in effects (Scanlines, Soft CRT, Full CRT) are this program's own code.
 If you redistribute the program with these shaders, keep their headers and licences with them. Their licences apply to those files only, not to the rest of the program. If you prefer not to ship them, delete the files: the program works without them and the built-in effects stay.
 
@@ -209,6 +218,8 @@ error.log            diagnostics: unusual events, audio gaps
 | `multichannel_sfx`, `stereo_pan`, `mp3_music`, `music_pack` | Sound section |
 | `fast_input`, `low_latency_audio`, `audio_sync_trim_ms` | Latency section |
 | `graphics_pack` | chosen graphics pack |
+| `pad_dual_stick` | twin-stick mode: the right stick aims (default `true`) |
+| `pad_aim_autofire` | the right stick also holds fire while pushed (default `true`) |
 | `key_up`, `key_fire`, … | keys as Windows virtual-key codes (Ctrl = 17) |
 | `pad_fire`, … | pad buttons by name: `"A"`, `"RT"`, `"Start"`…, `"none"` |
 
@@ -277,7 +288,7 @@ Esta es una **versión candidata a lanzamiento** de un **port nativo para Window
 - **Vídeo**: salida OpenGL con cuatro modos de aspecto, tres filtros de escalado, efectos CRT incorporados (líneas de escaneo, máscara de fósforo, curvatura, viñeteado, resplandor) y shaders `.glsl` externos de RetroArch.
 - **Sonido**: síntesis del chip YM2149, un mezclador multicanal para los efectos muestreados, panorámica estéreo de los efectos según su posición en pantalla, volúmenes por tipo y **bancos de música MP3** de reemplazo.
 - **Packs gráficos**: todos los sprites, tiles y pantallas fijas del juego se vuelcan a hojas PNG editables; se dibuja un pack de reemplazos a todo color en su lugar, con la animación y la interpolación originales.
-- **Controles**: teclado y mandos XInput (dos jugadores), totalmente redefinibles, más atajos de mando para el lanzacohetes, la granada y mantener posición.
+- **Controles**: teclado y mandos XInput (dos jugadores), totalmente redefinibles, más atajos de mando para el lanzacohetes, la granada y mantener posición, y un modo opcional de **doble stick** (el izquierdo mueve, el derecho apunta y dispara).
 - **Guardado**: el juego original no tiene partidas guardadas; el port añade tres ranuras y una orden «volver al mapa de misiones».
 - **Correcciones** de tirones y fallos que solo aparecen con frecuencias de fotogramas altas (todas se pueden desactivar).
 
@@ -291,7 +302,8 @@ Todas las teclas y botones del mando se pueden redefinir (véase más abajo); es
 
 | Acción | Teclado | Mando |
 |---|---|---|
-| Mover | Teclas de cursor | Stick o cruceta (fijo) |
+| Mover | Teclas de cursor | Stick izquierdo o cruceta (fijo) |
+| Apuntar y disparar (doble stick) | – | Stick derecho, 8 direcciones: el soldado mira y dispara en esa dirección sea cual sea la dirección en que se mueva; además mantiene el disparo mientras está pulsado (véase más abajo) |
 | Disparar | Ctrl (izquierdo o derecho), Z | A, gatillo derecho |
 | Arma siguiente | A | RB |
 | Arma anterior | – | LB (el juego solo avanza; el port salta directamente a la categoría anterior) |
@@ -308,8 +320,14 @@ Todas las teclas y botones del mando se pueden redefinir (véase más abajo); es
 
 El primer mando es el jugador 1 (se suma al teclado) y el segundo mando es el jugador 2; los mandos se detectan al conectarlos.
 
+**Modo doble stick** (*Controles → Doble stick: el derecho apunta*, activado por defecto; desactivado = el control original con un solo stick): el stick izquierdo mueve al soldado y el derecho fija hacia dónde **mira y dispara**, en 8 direcciones (sectores de 45°, zona muerta del 40 %), sea cual sea la dirección en que lo mueva el izquierdo: andar hacia arriba disparando a la derecha, desplazarse lateralmente disparando en diagonal… Al soltar el derecho, vuelve a mirar hacia donde camina. Mientras el derecho está pulsado se suspende el bloqueo original «disparar sin dirección = quedarse quieto», de modo que puedes empezar a moverte sin dejar de disparar. *El stick derecho también dispara* (activado por defecto) mantiene el botón de disparo por ti mientras el derecho está pulsado; desactívalo para apuntar con el derecho y disparar con el botón de siempre. Solo actúa durante una misión, y usa el mando 1 para el jugador 1 y el mando 2 para el jugador 2. *Mantener posición* (gatillo izquierdo) sigue funcionando.
+
 **Redefinir**: la pestaña *Controles* del menú de opciones muestra una imagen del mando y la opción *Redefinir teclas y botones del mando…*, que abre una ventana con todas las acciones. Selecciona una acción y pulsa la nueva tecla o botón del mando: **Esc** cancela, **Supr** la deja
 sin asignar, y una tecla que ya usa otra acción se le quita. *Restaurar controles por defecto* lo devuelve todo a su valor original.
+
+**Escribir**: en las pantallas que piden texto (el nombre en la tabla de récords) se pasan al juego todas las letras A–Z (incluidas la **Z**, que además es la segunda tecla de disparo, y la **V**), los dígitos, Retroceso, Supr y las teclas de puntuación habituales.
+
+**La imagen del mando** (pestaña *Controles*) la dibuja el programa, no es un fichero de imagen: cada caja dice qué hace ese botón *ahora*, de modo que sigue los botones que redefinas, muestra el stick derecho atenuado cuando el doble stick está desactivado, indica bajo su stick una acción asignada a L3 / R3 y aparece en el idioma del menú. Se ve más grande en pantalla completa.
 
 ## Menú de opciones
 Se abre con **Esc** o **Start**; el juego queda en pausa mientras está abierto. Las opciones se agrupan en **pestañas** (la barra bajo el título). Arriba/abajo seleccionan una opción, izquierda/derecha cambian su valor, **Intro / A** acepta, **Esc / B / Start** lo cierra.
@@ -323,7 +341,7 @@ Los ajustes se guardan en `options.json` al cerrar el menú.
 | **Sonido** | Sonido sí/no · Volumen · Música (MP3) · Música (YM2149F) · Efectos muestreados · Efectos (YM2149F) · Efectos multicanal · Panorámica estéreo de efectos · Música MP3 · Banco de música |
 | **Vídeo** | Pantalla completa · Relación de aspecto · Origen del shader · Filtro de escalado · Shader / efecto CRT y sus controles · Pack gráfico |
 | **Movimiento** | Interpolación de fotogramas · Suavizado subpíxel · Velocidad del juego · y, bajo *Latencia*: Lectura rápida de entrada · Audio de baja latencia · Ajuste de sincronía del audio |
-| **Controles** | Redefinir teclas y botones del mando (abre una ventana, con *Restaurar controles por defecto*) · imagen del mando (`assets\controller.png`) |
+| **Controles** | Doble stick: el derecho apunta · El stick derecho también dispara · Redefinir teclas y botones del mando (abre una ventana, con *Restaurar controles por defecto*) · imagen del mando (la dibuja el programa a partir de los controles actuales) |
 | **Sistema** | Idioma · Restaurar opciones por defecto (recarga `default.json`) · Créditos · Continuar · Salir |
 
 ### Idiomas
@@ -341,6 +359,8 @@ Para añadir un idioma copia `english.xml`, dale al nuevo fichero otro nombre, c
   Se proporcionan `MVPMatrix`, `Texture`, `InputSize` (320×200), `TextureSize`, `OutputSize`, `FrameCount` y los valores de `#pragma parameter`. Los presets de varias pasadas (`.glslp`, `.slangp`) no están soportados.
 
 ### Shaders y licencias
+**Independencia de la resolución.** La máscara de fósforo de los efectos CRT incorporados y de todos los shaders incluidos se dibuja a su tamaño original (3 píxeles por tríada de fósforo) con 1080 líneas y crece en proporción a la altura de la imagen por encima de eso, de modo que los fósforos se ven igual a 1080p, 1440p, 4K o cualquier resolución intermedia (por debajo de 1080 líneas se queda en 3 píxeles). Cada píxel de la pantalla promedia la máscara sobre su propia área, así que una escala no entera no produce muaré. Esto vale para `fakelottes`, `fakelottes-geom`, `crt-pi` y `fake-CRT-Geom` (en el último, su parámetro *Mask Size* se multiplica por el mismo factor); `crt-nes-mini` no tiene máscara y sus scanlines salen de las líneas del propio juego, así que no necesitó cambios. Las scanlines de todos ya siguen las líneas del juego a cualquier resolución. Si añades shaders propios cuya máscara se mida en píxeles de pantalla, escálala por `max(1.0, OutputSize.y / 1080.0)` de la misma forma.
+
 Los shaders `.glsl` que se incluyen en `shaders\` **no se han escrito para este programa: proceden de la colección de shaders de RetroArch / libretro** ([glsl-shaders](https://github.com/libretro/glsl-shaders)), y cada uno conserva la autoría y la licencia de su autor. Mira el principio de cada fichero: por ejemplo `crt-pi.glsl` (davej) está bajo la GNU GPL versión 2 o posterior, y varios ficheros solo indican el nombre del autor y no incluyen texto de licencia, así que comprueba su licencia original antes de redistribuirlos. El programa solo los carga en tiempo de ejecución, como ficheros independientes, y nada de él deriva de ellos; los efectos incorporados (Líneas de escaneo, CRT suave, CRT completo) son código propio de este programa.
 Si redistribuyes el programa con estos shaders, conserva con ellos sus cabeceras y licencias. Sus licencias se aplican solo a esos ficheros, no al resto del programa. Si prefieres no incluirlos, borra los ficheros: el programa funciona sin ellos y los efectos incorporados siguen disponibles.
 
@@ -445,6 +465,8 @@ error.log            diagnóstico: sucesos inusuales, cortes de audio
 | `multichannel_sfx`, `stereo_pan`, `mp3_music`, `music_pack` | sección Sonido |
 | `fast_input`, `low_latency_audio`, `audio_sync_trim_ms` | sección Latencia |
 | `graphics_pack` | pack gráfico elegido |
+| `pad_dual_stick` | modo doble stick: el derecho apunta (por defecto `true`) |
+| `pad_aim_autofire` | el stick derecho también mantiene el disparo mientras está pulsado (por defecto `true`) |
 | `key_up`, `key_fire`, … | teclas como códigos de tecla virtual de Windows (Ctrl = 17) |
 | `pad_fire`, … | botones del mando por nombre: `"A"`, `"RT"`, `"Start"`…, `"none"` |
 

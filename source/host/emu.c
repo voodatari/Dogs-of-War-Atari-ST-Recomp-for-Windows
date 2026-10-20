@@ -135,7 +135,12 @@ static void hk_mute_b(uint32_t a) { int k = a == 0x41DDC ? 0 : a == 0x41E04 ? 1 
 /* Pad: L2 = hold position. The player control routine ($9306, just before the movement steps) checks the flag +$56 of the player structure ($2DA for player 1, $376 for player 2): if it is non-zero
    he does not move, but the directions still turn the soldier (the fire direction comes from other flags). The game sets it only when fire is pressed with no direction; here it is forced while L2 is held. */
 static int hold_on[2] = { 0, 0 };
-static void hk_hold(uint32_t a) { (void)a; uint32_t a4 = g_cpu.a[4] & 0xFFFFFF; int pl = a4 == 0x2DA ? 0 : a4 == 0x376 ? 1 : -1; if (pl >= 0 && hold_on[pl]) mw8(a4 + 0x56, 0xFF); }
+/* Twin-stick (right stick = aim): aim_dir[p] is the right-stick direction (J_* bits = the game's direction bits) while the game is being played, else 0. aim_fire[p]: it also holds fire.
+   host_aim() (called by the player's direction routine, $9CAC) makes it the facing / fire direction ($36 of the player structure) whatever the left stick does; and while it is pushed the
+   "fire without direction = stand still" lock (+$56) is released, so the left stick can move the soldier while he keeps shooting where the right stick points. */
+static int aim_in[2] = { 0, 0 }, aim_fire[2] = { 0, 0 }; static uint8_t aim_dir[2] = { 0, 0 };
+uint32_t host_aim(uint32_t a4, uint32_t d7) { a4 &= 0xFFFFFF; int pl = a4 == 0x2DA ? 0 : a4 == 0x376 ? 1 : -1; return (pl >= 0 && aim_dir[pl]) ? aim_dir[pl] : d7; }
+static void hk_hold(uint32_t a) { (void)a; uint32_t a4 = g_cpu.a[4] & 0xFFFFFF; int pl = a4 == 0x2DA ? 0 : a4 == 0x376 ? 1 : -1; if (pl >= 0 && hold_on[pl]) mw8(a4 + 0x56, 0xFF); else if (pl >= 0 && aim_dir[pl]) mw16(a4 + 0x56, 0); }
 static void hk_audiofix(uint32_t a) { (void)a; g_cpu.Z = 1; }              /* while a sample plays the driver does not write the music's A/B channels: that jump is cancelled */
 
 static void install_hooks(void) {
@@ -342,6 +347,7 @@ static int handle_event(const Ev *e) {
     case EV_HZ: menu_hz = e->a; break;
     case EV_LEAD: lead = e->a; break;
     case EV_HOLD: { int pl = (int)e->a; if (pl >= 0 && pl < 2) hold_on[pl] = e->b != 0; } break;
+    case EV_AIM: { int pl = (int)e->a; if (pl >= 0 && pl < 2) { aim_in[pl] = (int)e->b & 0x0F; aim_fire[pl] = ((int)e->b & 0x80) != 0; } } break;
     case EV_GAMEHZ: game_hz = e->a; if (!menu_clock) set_rate(game_hz, 0.0); break;
     case EV_TICK: if (ticks < 3) ticks++; break;
     case EV_GOD: set_god((int)e->a); break;
@@ -374,10 +380,44 @@ static int handle_event(const Ev *e) {
     return 0;
 }
 
+/* Development only (DOW_TEST + DOW_AUTOMISSION=<mission value of the map boxes>): from the map it goes into that mission by itself (cursor -> mission -> EXIT of the shop), and once in the mission it plays a
+   fixed twin-stick script (left stick / right stick per phase, 100 VBL each) so the facing sprite ($36) can be checked in the log of DOW_PLAYERLOG without a pad. */
+static int auto_arrived(int tx, int ty, int tol) {
+    int x = (int)mr16(0x1EC), y = (int)mr16(0x1EE), dx = tx - x, dy = ty - y, st = 0;
+    if (abs(dx) > tol) st |= dx > 0 ? 8 : 4; if (abs(dy) > tol) st |= dy > 0 ? 2 : 1;
+    wj[1] = st; return st == 0;
+}
+static void autopilot(uint32_t v) {
+    static int step = 0, wait = 0, arrived = 0; static uint32_t g0 = 0, last_pulse = 0; static int fire_left = 0;
+    if (fire_left > 0) { wj[1] |= 0x80; fire_left--; return; }
+    if (wait > 0) { wait--; wj[1] = 0; return; }
+    if (!strcmp(kind_now, "map")) {
+        int want = atoi(getenv("DOW_AUTOMISSION")), tx = -1, ty = -1;
+        for (uint32_t a = 0xBF98; ; a += 10) { int xmin = (int16_t)mr16(a); if (xmin < 0) break; if ((int16_t)mr16(a + 8) == want) { tx = (xmin + (int16_t)mr16(a + 2)) / 2; ty = ((int16_t)mr16(a + 4) + (int16_t)mr16(a + 6)) / 2; break; } }
+        if (tx < 0) return;
+        if (auto_arrived(tx, ty, 1)) { if (++arrived > 25) { fire_left = 8; wait = 150; arrived = 0; } } else arrived = 0;
+    } else if (!strcmp(kind_now, "shop")) {
+        if (auto_arrived(288, 132, 3)) { if (++arrived > 20) { fire_left = 8; wait = 100; arrived = 0; } } else arrived = 0;
+    } else if (!strcmp(kind_now, "game")) {
+        if (!g0) { g0 = v; host_log("autopilot: mission started at vbl %u", v); }
+        uint32_t t = v - g0; int j = 0, aim = 0;
+        if (t >= 200 && t < 300) j = 1;
+        else if (t >= 300 && t < 400) { j = 1; aim = 8; }                  /* left: up, right stick: right */
+        else if (t >= 400 && t < 500) { j = 4; aim = 9; }                      /* left: left, right stick: up-right */
+        else if (t >= 500 && t < 600) { j = 0; aim = 2; }                      /* left: neutral, right stick: down */
+        else if (t >= 600 && t < 700) { j = 8; aim = 0; }                      /* left: right, right stick released */
+        else if (t >= 700 && t < 800) { j = 2 | 4; aim = 4; }                  /* left: down-left, right stick: left */
+        else if (t == 800) host_log("autopilot: script finished");
+        wj[1] = j; aim_in[0] = aim; aim_fire[0] = aim != 0;
+    } else if (v - last_pulse > 90 && g0 == 0) { last_pulse = v; fire_left = 6; }      /* the loading screens: fire until the mission starts */
+}
 static int pump(uint32_t v) {
     Ev e; while (ev_pop(&e)) if (handle_event(&e)) return 1;
+    if (getenv("DOW_TEST") && getenv("DOW_AUTOMISSION")) autopilot(v);
+    for (int pl = 0; pl < 2; pl++) aim_dir[pl] = (uint8_t)(last_gp ? aim_in[pl] : 0);          /* the right stick only aims during the mission (in the menus and the shop it does nothing) */
     for (int port = 0; port < 2; port++) {                                  /* fire is held at least HOLD VBL (the game polls once per logic frame) */
-        int want = (wj[port] & 0x80) || force_fire[port];
+        int pl = port ? 0 : 1;                                              /* joystick port 1 = player 1 */
+        int want = (wj[port] & 0x80) || force_fire[port] || (aim_dir[pl] && aim_fire[pl]);
         if (want && !fo[port]) { fo[port] = 1; fv_[port] = v; }
         if (!want && fo[port] && v - fv_[port] >= HOLD) fo[port] = 0;
         int st = (wj[port] & 0x0F) | (fo[port] ? 0x80 : 0);
@@ -393,7 +433,7 @@ static int pump(uint32_t v) {
 
 /* ------------------------------------------------------------------------------------------------ one VBL */
 static void on_frame_cb(Frame *f) {
-    if (getenv("DOW_PLAYERLOG")) host_log_file("player vbl %u x=%d y=%d  facing L=%02X R=%02X U=%02X D=%02X  still56=%02X%02X  input E=%02X F=%02X 10=%02X 11=%02X fire=%02X", f->vbl, (int)mr16(0x2DA + 2), (int)mr16(0x2DA + 4), mr8(0x2DA + 0x2E), mr8(0x2DA + 0x30), mr8(0x2DA + 0x32), mr8(0x2DA + 0x34), mr8(0x2DA + 0x56), mr8(0x2DA + 0x57), mr8(0x2DA + 0xE), mr8(0x2DA + 0xF), mr8(0x2DA + 0x10), mr8(0x2DA + 0x11), mr8(0x2DA + 0x12));
+    if (getenv("DOW_PLAYERLOG")) host_log_file("player vbl %u x=%d y=%d  facing L=%02X R=%02X U=%02X D=%02X  still56=%02X%02X  input E=%02X F=%02X 10=%02X 11=%02X fire=%02X  face36=%02X", f->vbl, (int)mr16(0x2DA + 2), (int)mr16(0x2DA + 4), mr8(0x2DA + 0x2E), mr8(0x2DA + 0x30), mr8(0x2DA + 0x32), mr8(0x2DA + 0x34), mr8(0x2DA + 0x56), mr8(0x2DA + 0x57), mr8(0x2DA + 0xE), mr8(0x2DA + 0xF), mr8(0x2DA + 0x10), mr8(0x2DA + 0x11), mr8(0x2DA + 0x12), mr8(0x2DA + 0x36));
     if (getenv("DOW_UNITLOG")) { char b[1500]; int n = snprintf(b, sizeof b, "units vbl %u scroll %d hs %d:", f->vbl, f->scroll, f->hs); for (int i = 0; i < f->nunits && n < 1400; i++) n += snprintf(b + n, sizeof b - (size_t)n, " %s#%d(%d,%d+%d)@%X", unit_name[f->units[i].unit], f->units[i].order, f->units[i].px, f->units[i].py, f->units[i].fine, f->units[i].ident); host_log_file("%s", b); } Msg *m = msg_new(MSG_FRAME); m->frame = frame_ref(f); msgq_push(m); last_frame_vbl = f->vbl; have_frame = 1; }
 static void on_reset_cb(void) { Msg *m = msg_new(MSG_RESET); msgq_push(m); }
 static void on_sprite_cb(uint64_t k, Sprite *s) { (void)k; (void)s; }

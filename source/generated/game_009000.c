@@ -2137,6 +2137,7 @@ L_009CD2:
 L_009CDC:
     SETB(d6, rd8(a4 + 0x36));                            /* 009CDC  move.b  $36(a4),d6 */
     wr8(a4 + 0x48, (d6 & 0xFF));                         /* 009CE0  move.b  d6,$48(a4) */
+    d7 = host_aim(a4, d7);                               /* twin-stick: the right stick sets the facing / fire direction ($36) whatever the movement is */
     /* 009CE4  andi.w  #$f,d7 */
     {
         uint32_t s = 0xF;

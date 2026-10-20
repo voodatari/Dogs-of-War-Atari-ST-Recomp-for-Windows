@@ -32,7 +32,7 @@ shaders, graphics packs) is described in the README of the release.
 
 Developer environment variables (only with `DOW_TEST=1`, nothing is saved to `options.json`): `DOW_STATE=file.dows` start from a snapshot, `DOW_SECONDS`, `DOW_SHOTS=dir` +
 `DOW_SHOT_EVERY`, `DOW_KEYS="t:scancode,..."`, `DOW_JOYSEQ="t:bits,..."`, `DOW_MSEQ="t:open|close|up|down|left|right|enter,..."`, `DOW_NOINPUT`, `DOW_GRAFICO=pack`,
-`DOW_SONIDO=0`. Graphics dump: `DOW_NODUMP=1` (do not make it at start-up), `DOW_DUMP_OUT=dir` (make it there and exit), `DOW_DUMP_SHOTS=dir` (screenshots of the scripted play), `DOW_DUMP_MISSIONS=n`.
+`DOW_SONIDO=0`, `DOW_AIM=<J_* bits>` (+ `DOW_AIM_FROM`, `DOW_AIM_TO`: right stick pushed by script), `DOW_MASKH=<height>` (pretend the picture is that tall: checks the resolution-independent phosphor mask), `DOW_AUTOMISSION=<mission value>` (goes into that mission from the map and plays a twin-stick script; use with `DOW_PLAYERLOG=1`). Graphics dump: `DOW_NODUMP=1` (do not make it at start-up), `DOW_DUMP_OUT=dir` (make it there and exit), `DOW_DUMP_SHOTS=dir` (screenshots of the scripted play), `DOW_DUMP_MISSIONS=n`.
 
 ## How to read the generated code
 
@@ -84,7 +84,8 @@ void wait_two_vbl(void)
 | `render.c`, `present.c` | frame composition at the monitor rate (interpolation, enemy filters, scroll fix) |
 | `ym.c`, `mixer.c`, `mp3.c`, `audioout.c` | YM2149, 4-bit sample mixer (multichannel + stereo pan), MP3 via Media Foundation (with music packs), waveOut / WASAPI |
 | `lang.c` | language files (`data/languages/*.xml`) and `tr(id)`, used by every text of the menus |
-| `video.c`, `menu.c`, `input.c`, `cfg.c` | OpenGL window and shaders, GDI options menu, keyboard/XInput with redefinable keys and buttons, `options.json` |
+| `video.c`, `menu.c`, `input.c`, `cfg.c` | OpenGL window and shaders, GDI options menu, keyboard/XInput with redefinable keys and buttons and twin-stick aiming (right stick), `options.json` |
+| `padmap.c`, `padmap_backend.h`, `padmap_gdi.c` | the picture of the pad in the Controls tab: portable core (layout and texts) + drawing backend (GDI on Windows; another system writes its own `padmap_<backend>.c`) |
 | `gfxpack.c`, `dump.c`, `png.c` | graphics packs, the graphics dump (`assets/original`), PNG reader/writer |
 | `ico.png` | the icon of the executable and of its window: the build script turns it into a multi-size `.ico` (transparency kept) and compiles it as a Windows resource |
 | `emu.c`, `main.c` | emulation thread (50 VBL/s clock, saves, weapon helpers), window loop |
@@ -140,7 +141,7 @@ shaders, packs gráficos) está descrito en el README de la versión publicada.
 
 Variables de entorno para desarrollo (solo con `DOW_TEST=1`, no se guarda nada en `options.json`): `DOW_STATE=fichero.dows` arranca desde una instantánea, `DOW_SECONDS`, `DOW_SHOTS=dir` +
 `DOW_SHOT_EVERY`, `DOW_KEYS="t:scancode,..."`, `DOW_JOYSEQ="t:bits,..."`, `DOW_MSEQ="t:open|close|up|down|left|right|enter,..."`, `DOW_NOINPUT`, `DOW_GRAFICO=pack`,
-`DOW_SONIDO=0`. Volcado de gráficos: `DOW_NODUMP=1` (no hacerlo al arrancar), `DOW_DUMP_OUT=dir` (hacerlo allí y salir), `DOW_DUMP_SHOTS=dir` (capturas de la partida guionizada), `DOW_DUMP_MISSIONS=n`.
+`DOW_SONIDO=0`, `DOW_AIM=<bits J_*>` (+ `DOW_AIM_FROM`, `DOW_AIM_TO`: stick derecho pulsado por guion), `DOW_AUTOMISSION=<valor de la misión>` (entra en esa misión desde el mapa y reproduce un guion de doble stick; usar con `DOW_PLAYERLOG=1`), `DOW_MASKH=<altura>` (simula que la imagen tiene esa altura: comprueba la máscara de fósforo independiente de la resolución). Volcado de gráficos: `DOW_NODUMP=1` (no hacerlo al arrancar), `DOW_DUMP_OUT=dir` (hacerlo allí y salir), `DOW_DUMP_SHOTS=dir` (capturas de la partida guionizada), `DOW_DUMP_MISSIONS=n`.
 
 ## Cómo leer el código generado
 
@@ -192,7 +193,8 @@ void wait_two_vbl(void)
 | `render.c`, `present.c` | composición de fotogramas a la frecuencia del monitor (interpolación, filtros de enemigos, corrección del scroll) |
 | `ym.c`, `mixer.c`, `mp3.c`, `audioout.c` | YM2149, mezclador de muestras de 4 bits (multicanal + panorámica estéreo), MP3 mediante Media Foundation (con bancos de música), waveOut / WASAPI |
 | `lang.c` | ficheros de idioma (`data/languages/*.xml`) y `tr(id)`, usados por todos los textos de los menús |
-| `video.c`, `menu.c`, `input.c`, `cfg.c` | ventana OpenGL y shaders, menú de opciones GDI, teclado/XInput con teclas y botones redefinibles, `options.json` |
+| `video.c`, `menu.c`, `input.c`, `cfg.c` | ventana OpenGL y shaders, menú de opciones GDI, teclado/XInput con teclas y botones redefinibles y apuntado con doble stick (stick derecho), `options.json` |
+| `padmap.c`, `padmap_backend.h`, `padmap_gdi.c` | la imagen del mando de la pestaña Controles: núcleo portable (disposición y textos) + backend de dibujo (GDI en Windows; otro sistema escribe su propio `padmap_<backend>.c`) |
 | `gfxpack.c`, `dump.c`, `png.c` | packs gráficos, el volcado de gráficos (`assets/original`), lector/escritor de PNG |
 | `ico.png` | el icono del ejecutable y de su ventana: el script de compilación lo convierte en un `.ico` de varios tamaños (conservando la transparencia) y lo compila como recurso de Windows |
 | `emu.c`, `main.c` | hilo de emulación (reloj de 50 VBL/s, guardados, ayudas de armas), bucle de la ventana |

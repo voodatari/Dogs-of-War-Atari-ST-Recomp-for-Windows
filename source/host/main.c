@@ -19,8 +19,9 @@
 static Presenter *pres; static Menu *menu, *menu_main, *menu_ctl; static AudioOut *aud;      
 static int S = 3, hz = 60; static double lead = LEAD_DEFAULT;
 /* Latency (tests): minimum emulation margin + fast input polling / low-latency WASAPI audio / hard sync with the GPU. */
-static int fastinp = 0, ll_audio = 0; static int last_hold[2] = { 0, 0 }; static double lead_norm = LEAD_DEFAULT, lead_ni = 0.5, atrim = 0.0; static int gmatch = 0;
+static int fastinp = 0, ll_audio = 0; static int last_hold[2] = { 0, 0 }, last_aim[2] = { 0, 0 }; static double lead_norm = LEAD_DEFAULT, lead_ni = 0.5, atrim = 0.0; static int gmatch = 0;
 static volatile int g_menu_open_f = 0; static volatile int *p_kstate = NULL; static volatile uint8_t *p_held = NULL; static volatile int *p_padhold = NULL;
+static int aim_code(const PadRead *pr, int n, int i) { int a = i < n ? pr[i].aim : 0; return a ? (a | (pad_aim_autofire ? 0x80 : 0)) : 0; }          /* EV_AIM value of a pad: right-stick direction (+ 0x80: it also fires) */
 static int fastin_on(void) { return fastinp && (!getenv("DOW_TEST") || getenv("DOW_FASTIN_TEST")); }
 static int snd = 1, mp3v = 1, mchv = 0, panv = 0, fixv = 1, godv = 0, moneyv = 0; static double volm = 1.0;
 static int slot = 1; static char app[600], cfg_path[700], default_path[700], legacy_path[700], game_dir[600], assets_root[700], save_dir[700];
@@ -76,6 +77,8 @@ static double game_rate(void) {                                          /* game
 static void apply_lead(void) { lead = pflags.interp ? lead_norm : lead_ni; emu_post(EV_LEAD, lead, 0); emu_post(EV_GAMEHZ, game_rate(), 0); if (aud) audio_set_target(aud, aud_target_ms()); }
 static int g_interp(void) { return pflags.interp; } static void s_interp(int v) { pflags.interp = v; apply_lead(); }
 static int gs_nch(void) { return 2; } static const char *gs_txt(int i) { return i ? "val.speed.1" : "val.speed.0"; } static int gs_get(void) { return gmatch; } static void gs_set(int i) { gmatch = i; apply_lead(); }
+static int g_dual(void) { return pad_dual_stick; } static void s_dual(int v) { pad_dual_stick = v; last_j1_reset = 1; }
+static int g_autofire(void) { return pad_aim_autofire; } static void s_autofire(int v) { pad_aim_autofire = v; last_j1_reset = 1; }
 static int g_fastin(void) { return fastinp; } static void s_fastin(int v) { fastinp = v; last_j1_reset = 1; }
 static int g_llaud(void) { return ll_audio; } static void s_llaud(int v) { ll_audio = v; if (aud) { if (!audio_set_lowlat(aud, v)) ll_audio = 0; audio_set_target(aud, aud_target_ms()); } else ll_audio = 0; }
 static double g_atrim(void) { return atrim; } static void s_atrim(double v) { atrim = v; if (aud) audio_set_target(aud, aud_target_ms()); }
@@ -290,8 +293,10 @@ static void build_menu(int have_audio, int have_gl, int have_pack) {
         add_slider("  menu.audio_sync_trim_ms", "menu.audio_sync_trim_ms.hint", -100.0, 100.0, 5.0, "%.0f", g_atrim, s_atrim);
     }
     add_tab("tab.controls", "tab.controls.hint");
+    add_bool("menu.dual_stick", "menu.dual_stick.hint", g_dual, s_dual);
+    add_bool("  menu.dual_stick_autofire", "menu.dual_stick_autofire.hint", g_autofire, s_autofire);
     add_action("menu.keys_and_gamepad_buttons", "menu.keys_and_gamepad_buttons.hint", open_controls);
-    { char ip[800]; snprintf(ip, sizeof ip, "%s/assets/controller.png", app); add_image(ip); }
+    add_image("@padmap");                                                    /* the picture of the pad, drawn by the program from the current controls */
     add_tab("tab.system", "tab.system.hint");
     add_choice("menu.language", "menu.language.hint", lg_nch, lg_txt, lg_get, lg_set);
     add_action("menu.restore_default_options", "menu.restore_default_options.hint", act_restore);
@@ -304,7 +309,7 @@ static void build_menu(int have_audio, int have_gl, int have_pack) {
 static MItem *last_item(void) { return NULL; }
 
 /* ------------------------------------------------------------------------------------------------ game */
-static void open_menu(void) { { char cur[80]; snprintf(cur, sizeof cur, "%s", music_pack); scan_packs(); pack_resolve(cur); } rb_kind = 0; menu = menu_main; g_menu_open_f = 1; menu_show(menu); emu_post(EV_HOLD, 0, 0); emu_post(EV_HOLD, 1, 0); last_hold[0] = last_hold[1] = 0; emu_post(EV_JOY, 0, 0); emu_post(EV_JOY0, 0, 0); emu_post(EV_PAUSE, 1, 0); menu_sig_last[0] = 0; }
+static void open_menu(void) { { char cur[80]; snprintf(cur, sizeof cur, "%s", music_pack); scan_packs(); pack_resolve(cur); } rb_kind = 0; menu = menu_main; g_menu_open_f = 1; menu_show(menu); emu_post(EV_HOLD, 0, 0); emu_post(EV_HOLD, 1, 0); last_hold[0] = last_hold[1] = 0; emu_post(EV_AIM, 0, 0); emu_post(EV_AIM, 1, 0); last_aim[0] = last_aim[1] = 0; emu_post(EV_JOY, 0, 0); emu_post(EV_JOY0, 0, 0); emu_post(EV_PAUSE, 1, 0); menu_sig_last[0] = 0; }
 static void close_menu(void) { rb_kind = 0; menu_hide(menu_ctl); menu_hide(menu_main); menu = menu_main; g_menu_open_f = 0; last_j1_reset = 1; emu_post(EV_PAUSE, 0, 0); save_cfg(); }
 
 /* The original game file FILES/DOW must be in the "data" folder next to the executable. */
@@ -319,14 +324,14 @@ static void find_game_dir(void) {
    a key or button used to accept the menu does not count until it is released, and only with the window in the foreground. */
 static DWORD WINAPI fastin_thread(LPVOID arg) {
     (void)arg; timeBeginPeriod(1); SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
-    int l1 = -1, l0 = -1, lh[2] = { -1, -1 }; 
+    int l1 = -1, l0 = -1, lh[2] = { -1, -1 }, la[2] = { -1, -1 }; 
     while (running) {
-        if (!fastin_on() || g_menu_open_f || !p_held) { l1 = l0 = -1; lh[0] = lh[1] = -1; Sleep(fastin_on() ? 1 : 20); continue; }
+        if (!fastin_on() || g_menu_open_f || !p_held) { l1 = l0 = -1; lh[0] = lh[1] = -1; la[0] = la[1] = -1; Sleep(fastin_on() ? 1 : 20); continue; }
         PadRead pr[2]; int n = pads_read(pr); int kb = 0;
         if (getenv("DOW_FASTIN_TEST") || GetForegroundWindow() == (HWND)video_hwnd()) { int ks[16], nk = kbd_joy_keys(ks); for (int i = 0; i < nk; i++) if ((GetAsyncKeyState(ks[i]) & 0x8000) && !p_held[ks[i] & 511]) kb |= kbd_joy_bit(ks[i]); }
         int st[2] = { 0, 0 }; for (int i = 0; i < n && i < 2; i++) { st[i] = pr[i].st; if (p_padhold[i] && (st[i] & J_FIRE)) st[i] &= ~J_FIRE; }
         int j1 = kb | st[0], j0 = st[1];
-        for (int i = 0; i < 2; i++) { int h = i < n ? pr[i].hold : 0; if (h != lh[i]) { lh[i] = h; emu_post(EV_HOLD, i, h); } }
+        for (int i = 0; i < 2; i++) { int h = i < n ? pr[i].hold : 0; if (h != lh[i]) { lh[i] = h; emu_post(EV_HOLD, i, h); } int am = aim_code(pr, n, i); if (am != la[i]) { la[i] = am; emu_post(EV_AIM, i, am); } }
         if (j1 != l1) { l1 = j1; emu_post(EV_JOY, j1, 0); if (getenv("DOW_FASTIN_LOG")) host_log_file("fastin j1=%02X t=%.4f", j1, now_s()); }
         if (j0 != l0) { l0 = j0; emu_post(EV_JOY0, j0, 0); }
         Sleep(1);
@@ -437,6 +442,7 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < kn; i++) { if (!kdone[i] && et >= kt[i]) { kdone[i] = 1; krel[i] = et + 0.25; emu_post(EV_KEY, ks[i], 1); } else if (kdone[i] == 1 && et >= krel[i]) { kdone[i] = 2; emu_post(EV_KEY, ks[i], 0); } }
             }
             if (getenv("DOW_HOLD")) { static int hs_ = 0; double h0 = 0, h1 = 0; sscanf(getenv("DOW_HOLD"), "%lf:%lf", &h0, &h1); int want_h = et >= h0 && et < h1; if (want_h != hs_) { hs_ = want_h; emu_post(EV_HOLD, 0, want_h); } }       /* test: L2 held between h0 and h1 s */
+            if (getenv("DOW_AIM")) { static int as_ = -1; int bits = atoi(getenv("DOW_AIM")); double a0 = env_d("DOW_AIM_FROM", 0), a1 = env_d("DOW_AIM_TO", 1e9); int want_a = (et >= a0 && et < a1) ? (bits | (pad_aim_autofire ? 0x80 : 0)) : 0; if (want_a != as_) { as_ = want_a; emu_post(EV_AIM, 0, want_a); } }       /* test: right stick (J_* bits) pushed between DOW_AIM_FROM and DOW_AIM_TO s */
             if (getenv("DOW_GOD_AT") && et > atof(getenv("DOW_GOD_AT")) && !godv) { godv = 1; emu_post(EV_GOD, 1, 0); }
             if (getenv("DOW_MSEQ")) {                                         /* "t:action,...": drives the menu by script (open close up down left right enter) */
                 static double mt[64]; static char ma[64][12]; static int mn = -1, mdone[64];
@@ -482,7 +488,11 @@ int main(int argc, char **argv) {
                 }
                 if (down && (vk == VK_PRIOR || vk == VK_NEXT)) { { double *pl = pflags.interp ? &lead_norm : &lead_ni; *pl += vk == VK_PRIOR ? 0.5 : -0.5; if (*pl < (pflags.interp ? 0.5 : 0.0)) *pl = pflags.interp ? 0.5 : 0.0; if (*pl > 6) *pl = 6; apply_lead(); } }
                 int jb = kbd_joy_bit(vk), ka = kbd_action(vk);
-                if (jb) state = down ? (state | jb) : (state & ~jb);
+                if (jb) {
+                    state = down ? (state | jb) : (state & ~jb);
+                    int jsc = kbd_scancode(vk);                              /* a joystick key that is also a letter (Z = second fire key): on the screens that take typing (the high-score name) it is typed too */
+                    if (jsc && !ev.rep) { static uint8_t typed[512]; if (down) { if (!strcmp(present_screen_kind(pres), "otro")) { typed[vk & 511] = 1; emu_post(EV_KEY, jsc, 1); } } else if (typed[vk & 511]) { typed[vk & 511] = 0; emu_post(EV_KEY, jsc, 0); } }
+                }
                 else if (ka == KA_WNEXT) { if (!ev.rep) emu_post(EV_KEY, 0x1E, down); }
                 else if (ka == KA_WPREV) { if (down && !ev.rep) emu_post(EV_WPN, 0x1E, -1); }
                 else if (ka == KA_ROCKET) { if (down && !ev.rep) emu_post(EV_QUICK, 0x1E, 0); }
@@ -500,6 +510,7 @@ int main(int argc, char **argv) {
             rb_prev_ok = 1; npads = 0;
         } else if (rb_wait_release) { int any = 0; for (int i = 0; i < npads && i < 2; i++) any |= pr[i].raw; if (any) npads = 0; else rb_wait_release = 0; }
         if (!fastin_on()) for (int i = 0; i < 2; i++) { int h = (i < npads && !menu_open) ? pr[i].hold : 0; if (h != last_hold[i]) { last_hold[i] = h; emu_post(EV_HOLD, i, h); } }       /* L2: hold position (with fast polling the thread sends it) */
+        if (!fastin_on()) for (int i = 0; i < 2; i++) { int am = menu_open ? 0 : aim_code(pr, npads, i); if (am != last_aim[i]) { last_aim[i] = am; emu_post(EV_AIM, i, am); } }       /* right stick: aim (twin-stick) */
         for (int i = 0; i < npads; i++) {                                    /* A dispara / acepta; R1 R2 = arma siguiente; L1 L2 = anterior; B = cohetes; X = granadas; Start = menu; Back = salir */
             int menu_btn = !!(pr[i].acts & PA_MENU), wb = !!(pr[i].acts & PA_WBACK), rk = !!(pr[i].acts & PA_ROCKET), gr = !!(pr[i].acts & PA_GRENADE), ex = !!(pr[i].acts & PA_EXIT);
             if (menu_btn && !pg_menu[i]) { if (menu_open) close_menu(); else open_menu(); menu_open = menu_is_open(menu); }
@@ -533,7 +544,7 @@ int main(int argc, char **argv) {
         else for (int i = 0; i < npads && i < 2; i++) { if (padhold[i] && (pr[i].st & J_FIRE)) pr[i].st &= ~J_FIRE; else padhold[i] = 0; }
         int j1 = menu_open ? 0 : (state | (npads > 0 ? pr[0].st : 0)), j0 = npads > 1 ? pr[1].st : 0;
         g_menu_open_f = menu_open;
-        if (last_j1_reset) { last_j1_reset = 0; last_j1 = last_j0 = -1; last_hold[0] = last_hold[1] = -1; }
+        if (last_j1_reset) { last_j1_reset = 0; last_j1 = last_j0 = -1; last_hold[0] = last_hold[1] = -1; last_aim[0] = last_aim[1] = -1; }
         if (!fastin_on()) {                                                 /* with fast input polling the polling thread sends the joystick (1 kHz) */
             if (j1 != last_j1) { last_j1 = j1; emu_post(EV_JOY, j1, 0); }
             if (j0 != last_j0) { last_j0 = j0; emu_post(EV_JOY0, j0, 0); }

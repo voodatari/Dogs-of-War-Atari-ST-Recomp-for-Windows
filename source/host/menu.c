@@ -3,6 +3,7 @@
  */
 #include "menu.h"
 #include "lang.h"
+#include "padmap.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -27,12 +28,24 @@ static void range_(Menu *m, int *a, int *b) {
 }
 #define NOSEL(k) ((k) == MK_SEP || (k) == MK_IMAGE)              /* items the cursor skips */
 /* pictures of MK_IMAGE items: loaded once */
-typedef struct { char path[520]; uint8_t *rgba; int w, h, tried; } ImgCache;
+typedef struct { char path[520]; uint8_t *rgba; int w, h, tried; unsigned sig; } ImgCache;
 static ImgCache imgc[4];
 static ImgCache *get_image(const char *path) {
+    if (!strcmp(path, "@padmap")) {                                       /* the picture of the pad is drawn by the program (padmap.c) and made again when what it shows changes */
+        static ImgCache pm; unsigned sg = padmap_signature();
+        if (!pm.tried || pm.sig != sg) { free(pm.rgba); pm.rgba = padmap_render(&pm.w, &pm.h); pm.sig = sg; pm.tried = 1; }
+        return &pm;
+    }
     for (int i = 0; i < 4; i++) if (imgc[i].tried && !strcmp(imgc[i].path, path)) return &imgc[i];
     for (int i = 0; i < 4; i++) if (!imgc[i].tried) { snprintf(imgc[i].path, sizeof imgc[i].path, "%s", path); imgc[i].tried = 1; imgc[i].rgba = png_read_rgba(path, &imgc[i].w, &imgc[i].h); return &imgc[i]; }
     return NULL;
+}
+/* The picture of the current language: "<name>_<code>.<ext>" (controller_es.png in Spanish) if it exists, else the given one (controller.png, the English one) */
+static const char *localized_path(const char *path, char *out, size_t n) {
+    const char *code = lang_current(); const char *dot = strrchr(path, '.');
+    if (!path[0] || !dot || !strcmp(code, "en")) return path;
+    snprintf(out, n, "%.*s_%s%s", (int)(dot - path), path, code, dot);
+    return file_exists(out) ? out : path;
 }
 /* draws the picture centred in the box (x, y, w, h), scaled to fit, over the panel colour (10, 12, 24) */
 static void blit_image(uint8_t *bits, int W, int H, const char *path, int x0, int y0, int bw, int bh) {
@@ -114,6 +127,7 @@ static void value_text(const MItem *it, char *out, size_t n) {
 int menu_signature(Menu *m, int w, int h, char *out, size_t n) {
     size_t k = 0; k += (size_t)snprintf(out + k, n - k, "%d|%d|%d|%d|%d|", m->cur, w, h, m->tab, m->tabfocus);
     if (now_s() - m->status_t < 5.0) k += (size_t)snprintf(out + k, n - k, "%s|", m->status);
+    k += (size_t)snprintf(out + k, n - k, "%u|", padmap_signature());                       /* the picture of the pad depends on the controls and the language */
     for (int i = 0; i < m->n && k + 100 < n; i++) if (NOSEL(m->it[i].kind) == 0) { char v[160]; value_text(&m->it[i], v, sizeof v); k += (size_t)snprintf(out + k, n - k, "%s;", v); }
     return (int)k;
 }
@@ -144,13 +158,21 @@ uint8_t *menu_draw(Menu *m, int W, int H) {
     HFONT f = mkfont(fh, 0), fb = mkfont(fhb, 1), fsm = mkfont(fhs, 0); SetBkMode(dc, TRANSPARENT);
     SelectObject(dc, f); TEXTMETRICA tm; GetTextMetricsA(dc, &tm); int lh = tm.tmHeight + 5;
     SelectObject(dc, fb); GetTextMetricsA(dc, &tm); int hb = tm.tmHeight; SelectObject(dc, f);
-    int pw = (int)(W * 0.72), hint_lines = 4, ph_max = (int)(H * 0.94), tabh = m->ntabs ? lh + 10 : 0;                /* the explanation box is 4 lines tall; if the text does not fit the font is reduced */
+    int pw = (int)(W * 0.72), hint_lines = 4, has_img = 0, hint_h = 0, hpct = 82;          /* hint_h: height of the explanation box; hpct: its font, in % of the options' */
+    { int a0, b0; range_(m, &a0, &b0); for (int i = a0; i < b0; i++) if (m->it[i].kind == MK_IMAGE) has_img = 1;
+      if (has_img) {                                                       /* a tab with a picture: the explanation box is only as tall as the longest explanation of the tab needs, and the picture gets the rest */
+          hpct = 68; HFONT fA = mkfont(fh * hpct / 100, 0); HGDIOBJ o = SelectObject(dc, fA); TEXTMETRICA t2; GetTextMetricsA(dc, &t2); int lhA2 = t2.tmHeight + 4, need = 1; static char tl[12][200];
+          for (int i = a0; i <= b0; i++) { const char *hid = i < b0 ? m->it[i].hint : tab_item(m, m->tab)->hint; if (!hid) continue; int k = wrap(dc, tr(hid), pw - 44, tl, 12); if (k > need) need = k; }
+          SelectObject(dc, o); DeleteObject(fA); hint_h = need * lhA2 + 12; if (hint_h > 4 * lh) hint_h = 4 * lh; } }
+    if (!has_img) hint_h = hint_lines * lh;
+    int ph_max = (int)(H * 0.94), tabh = m->ntabs ? lh + 10 : 0;                /* the explanation box is 4 lines tall; if the text does not fit the font is reduced */
     int foot_h = fhs * 2 + 16;                                       /* footer strip with the navigation instructions */
-    int rows = (ph_max - hb - 24 - tabh - (hint_lines * lh + foot_h + 8)) / lh; if (rows < 5) rows = 5;
+    int rows = (ph_max - hb - 24 - tabh - (hint_h + foot_h + 8)) / lh; if (rows < 5) rows = 5;
     int lo, n; range_(m, &lo, &n); if (m->top < lo || m->top >= n) m->top = lo;
     if (!m->tabfocus) { if (m->cur < m->top) m->top = m->cur; if (m->cur >= m->top + rows) m->top = m->cur - rows + 1; }
     if (m->top > lo && NOSEL(m->it[m->top - 1].kind) && m->cur - m->top < rows - 1) m->top--;
-    int ph = hb + 18 + tabh + rows * lh + hint_lines * lh + foot_h + 14, px = (W - pw) / 2, py = (H - ph) / 2;
+    int ph_nat = hb + 18 + tabh + rows * lh + hint_h + foot_h + 14, ph = (has_img && ph_nat < ph_max) ? ph_max : ph_nat, px = (W - pw) / 2, py = (H - ph) / 2;          /* with a picture the panel takes all the height and the picture the extra */
+    int by0 = py + ph - hint_h - foot_h - 6;                              /* top of the explanation box (its separator line is 4 pixels above) */
     HBRUSH br = CreateSolidBrush(RGB(10, 12, 24)); HPEN pen = CreatePen(PS_SOLID, 2, RGB(230, 190, 70)); SelectObject(dc, br); SelectObject(dc, pen);
     RoundRect(dc, px, py, px + pw, py + ph, 24, 24);
     SelectObject(dc, fb); { int tw = text_w(dc, tr(m->title)); text_at(dc, px + (pw - tw) / 2, py + 8, tr(m->title), RGB(255, 215, 90)); }
@@ -171,7 +193,7 @@ uint8_t *menu_draw(Menu *m, int W, int H) {
     for (int i = m->top; i < n && i < m->top + rows; i++) {
         MItem *it = &m->it[i]; int sel = i == m->cur && !m->tabfocus; char label[128];
         tr_label(it->dynlabel ? it->dynlabel() : it->label, label, sizeof label);
-        if (it->kind == MK_IMAGE) { blit_image(bits, W, H, it->path ? it->path : "", px + 20, y, pw - 40, py + 14 + hb + tabh + rows * lh - y); break; }
+        if (it->kind == MK_IMAGE) { { char lp[560]; blit_image(bits, W, H, localized_path(it->path ? it->path : "", lp, sizeof lp), px + 20, y, pw - 40, by0 - 12 - y); break; } }
         if (it->kind == MK_SEP && !label[0]) { y += lh; continue; }
         if (it->kind == MK_SEP) {
             if (it->plain) text_at(dc, px + 30, y, label, RGB(215, 215, 230));
@@ -186,21 +208,21 @@ uint8_t *menu_draw(Menu *m, int W, int H) {
         y += lh;
     }
     if (m->top > lo) text_at(dc, px + pw - 18, py + 10, "^", RGB(200, 200, 200));
-    if (m->top + rows < n) text_at(dc, px + pw - 18, py + ph - hint_lines * lh - foot_h - 26, "v", RGB(200, 200, 200));
-    int by = py + ph - hint_lines * lh - foot_h - 6;
+    if (m->top + rows < n) text_at(dc, px + pw - 18, py + ph - hint_h - foot_h - 26, "v", RGB(200, 200, 200));
+    int by = by0;
     { HPEN lp = CreatePen(PS_SOLID, 1, RGB(90, 100, 150)); HGDIOBJ op = SelectObject(dc, lp); MoveToEx(dc, px + 16, by - 4, NULL); LineTo(dc, px + pw - 16, by - 4); SelectObject(dc, op); DeleteObject(lp); }
     int k0 = 0;
     if (m->status[0] && now_s() - m->status_t < 5.0) { text_at(dc, px + 22, by, m->status, RGB(255, 225, 90)); k0 = 1; }
     static char lines[12][200], lines2[12][200]; const char *htxt = (m->ntabs && m->tabfocus) ? (tab_item(m, m->tab)->hint ? tr(tab_item(m, m->tab)->hint) : "") : (m->it[m->cur].hint ? tr(m->it[m->cur].hint) : "");
     const char *vtxt = NULL; { const MItem *ci = &m->it[m->cur]; if (!(m->ntabs && m->tabfocus) && ci->kind == MK_CHOICE && ci->valhint && ci->nch && ci->nch() > 0) vtxt = tr(ci->valhint(ci->getch())); if (vtxt && !vtxt[0]) vtxt = NULL; }
-    int nl = 0, nl2 = 0, gap = 0, lhA = lh, lhB = lh; HFONT fh2 = NULL, fhA = mkfont(fh * 82 / 100, 0);       /* the general text always has the same font (smaller than the options); only the text of the chosen value shrinks to fit */
+    int nl = 0, nl2 = 0, gap = 0, lhA = lh, lhB = lh; HFONT fh2 = NULL, fhA = mkfont(fh * hpct / 100, 0);       /* the general text always has the same font (smaller than the options); only the text of the chosen value shrinks to fit */
     SelectObject(dc, fhA); GetTextMetricsA(dc, &tm); lhA = tm.tmHeight + 4; nl = wrap(dc, htxt, pw - 44, lines, 12);
     if (!vtxt) lhB = lhA;
-    for (int pct = 82; vtxt && pct >= 40; pct -= 4) {                       /* the largest font with which the text of the value fits in what is left of the box */
+    for (int pct = hpct; vtxt && pct >= 40; pct -= 4) {                       /* the largest font with which the text of the value fits in what is left of the box */
         if (fh2) DeleteObject(fh2);
         fh2 = mkfont(fh * pct / 100, 0); SelectObject(dc, fh2); GetTextMetricsA(dc, &tm); lhB = tm.tmHeight + 5 * pct / 100; gap = lhB / 2 + 2;
         nl2 = wrap(dc, vtxt, pw - 44, lines2, 12);
-        if (k0 * lh + nl * lhA + gap + nl2 * lhB <= hint_lines * lh) break;
+        if (k0 * lh + nl * lhA + gap + nl2 * lhB <= hint_h) break;
     }
     SelectObject(dc, fhA); for (int k = 0; k < nl; k++) text_at(dc, px + 22, by + k0 * lh + k * lhA, lines[k], RGB(190, 200, 235));
     if (vtxt) {                                                              /* line, and the explanation of the chosen value */
