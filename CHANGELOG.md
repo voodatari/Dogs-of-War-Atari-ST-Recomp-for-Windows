@@ -2,6 +2,16 @@
 
 This file lists, in order, the steps that led to the current version. Dates are those of the work sessions (2026). The project started as an analysis of the original game and went through three technical stages before reaching its present form: a prototype that ran the game on a 68000 emulator library inside a Python program, a hybrid with a native core, and the current **all-C port in which the whole game is translated to C**. Releases are numbered: **1.0** (2026-10-19) was the first public one and **1.1** (2026-10-20) the current one; the steps before 1.0 are listed by date.
 
+## Version 1.1.1 (2026-10-20) – the Windows code of the program reorganised and documented
+The Windows part of the program (`source/host`) was reorganised and documented; **the program behaves exactly as in 1.1** (same game code, same options, same files). The only visible differences are in the diagnostic files: the corruption reports are now written as `crash<n>_start.dows`, `crash<n>_inputs.txt` and `crash<n>_end.dows` (they used Spanish names) and a few log lines are in English.
+- Formatted with `clang-format` (`source/host/.clang-format`): one statement per line instead of dozens on a line (6,900 lines became about 18,000), trailing comments moved above the code they explain.
+- Every function has a comment and the sections of each file are marked. The remains of Spanish in comments, texts and the file names of the crash reports were translated to English.
+- `main.c` (2,000 lines with a 900-line `main()`) was divided into modules with one job each: `app.c` (state and options), `game_input.c` (keyboard, pads, menu navigation), `fastinput.c`, `menu_ui.c`, `menu_options.c`,
+  `musicpacks.c`, `devtest.c`, and a `main.c` that only starts up, loops and shuts down; `app.h` explains how they fit together. The obscure global names (`S`, `hz`, `aud`, `fixv`, `gmatch`, `wj`, `jj`, `clk_t`...) now
+  have descriptive names.
+- How it was checked: the compiled machine code of the files that only received formatting, comments and renames is byte-for-byte the same as before; for the split of `main.c` a regression test (the scripted mission and the
+  options menu on its six tabs) gives the same results as the previous release.
+
 ## Version 1.1 (2026-10-20) – twin-stick control, interactive gamepad picture, resolution-independent CRT mask
 Main feature, switchable in **Controls → Twin-stick: right stick aims** (option `pad_dual_stick`, on by default):
 - **Left stick** moves the soldier as always. **Right stick** (8 directions, 45-degree sectors, dead zone 40 %) sets the direction he **faces and shoots**, whatever way the left stick moves him: you can walk up while firing to the right, or strafe and shoot diagonally. When the right stick is released the soldier goes back to facing the way he walks.
@@ -97,6 +107,16 @@ The program is a single native C executable. Nothing is interpreted and nothing 
 # Registro de cambios – Dogs of War, port para Windows a 60 fps
 
 Este fichero enumera, por orden, los pasos que llevaron a la versión actual. Las fechas son las de las sesiones de trabajo (2026). El proyecto empezó como un análisis del juego original y pasó por tres etapas técnicas hasta su forma actual: un prototipo que ejecutaba el juego con una biblioteca de emulación 68000 dentro de un programa en Python, un híbrido con núcleo nativo y el **port actual, todo en C, en el que el juego completo está traducido a C**. Las versiones publicadas están numeradas: la **1.0** (2026-10-19) fue la primera pública y la **1.1** (2026-10-20) es la actual; los pasos anteriores a la 1.0 se listan por fecha.
+
+## Versión 1.1.1 (2026-10-20) – el código de Windows del programa, reorganizado y documentado
+La parte de Windows del programa (`source/host`) se reorganizó y documentó; **el programa se comporta exactamente como en la 1.1** (mismo código del juego, mismas opciones, mismos ficheros). Las únicas diferencias visibles están en los ficheros de diagnóstico: los informes de corrupción se escriben ahora como `crash<n>_start.dows`, `crash<n>_inputs.txt` y `crash<n>_end.dows` (tenían nombres en español) y algunas líneas del registro están en inglés.
+- Formateada con `clang-format` (`source/host/.clang-format`): una sentencia por línea en lugar de decenas en una línea (6.900 líneas pasaron a unas 18.000), con los comentarios de final de línea movidos encima del código que explican.
+- Cada función tiene su comentario y las secciones de cada fichero están marcadas. Los restos de español en comentarios, textos y nombres de ficheros de los informes de fallo se tradujeron al inglés.
+- `main.c` (2.000 líneas con un `main()` de 900) se dividió en módulos con una sola tarea cada uno: `app.c` (estado y opciones), `game_input.c` (teclado, mandos, navegación del menú), `fastinput.c`, `menu_ui.c`,
+  `menu_options.c`, `musicpacks.c`, `devtest.c`, y un `main.c` que solo arranca, repite el bucle y cierra; `app.h` explica cómo encajan. Los nombres globales oscuros (`S`, `hz`, `aud`, `fixv`, `gmatch`, `wj`, `jj`, `clk_t`...)
+  tienen ahora nombres descriptivos.
+- Cómo se comprobó: el código máquina de los ficheros que solo recibieron formato, comentarios y renombrados es idéntico byte a byte al de antes; para la división de `main.c` una prueba de regresión (la misión guionizada y el
+  menú de opciones en sus seis pestañas) da los mismos resultados que la versión anterior.
 
 ## Versión 1.1 (2026-10-20) – control de doble stick, imagen interactiva del mando y máscara CRT independiente de la resolución
 Función principal, que se activa y desactiva en **Controles → Doble stick: el derecho apunta** (opción `pad_dual_stick`, activada por defecto):

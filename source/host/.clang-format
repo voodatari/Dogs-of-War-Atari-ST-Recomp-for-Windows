@@ -1,0 +1,23 @@
+# Style of the Windows host (source/host). Run: clang-format -i *.c *.h
+BasedOnStyle: LLVM
+IndentWidth: 4
+ContinuationIndentWidth: 4
+ColumnLimit: 120
+UseTab: Never
+BreakBeforeBraces: Attach
+IndentCaseLabels: true
+PointerAlignment: Right
+SortIncludes: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+SpacesBeforeTrailingComments: 2
+AlignTrailingComments: true
+ReflowComments: true
+AlignConsecutiveMacros: Consecutive
+AlignAfterOpenBracket: Align
+BinPackArguments: true
+BinPackParameters: true
+MaxEmptyLinesToKeep: 1

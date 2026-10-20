@@ -88,7 +88,17 @@ void wait_two_vbl(void)
 | `padmap.c`, `padmap_backend.h`, `padmap_gdi.c` | the picture of the pad in the Controls tab: portable core (layout and texts) + drawing backend (GDI on Windows; another system writes its own `padmap_<backend>.c`) |
 | `gfxpack.c`, `dump.c`, `png.c` | graphics packs, the graphics dump (`assets/original`), PNG reader/writer |
 | `ico.png` | the icon of the executable and of its window: the build script turns it into a multi-size `.ico` (transparency kept) and compiles it as a Windows resource |
-| `emu.c`, `main.c` | emulation thread (50 VBL/s clock, saves, weapon helpers), window loop |
+| `emu.c` | emulation thread (50 VBL/s clock, saves, weapon helpers, audio of every VBL, hooks into the game code) |
+| `main.c` | start-up, the window loop (one image per monitor refresh) and shutdown |
+| `app.h`, `app.c` | the state shared by the window-thread code (objects, display, options, folders) and the loading / saving of `options.json` |
+| `game_input.c`, `fastinput.c` | keyboard, gamepads and menu navigation of every frame; the optional thread that reads the inputs 1000 times per second |
+| `menu_ui.c`, `menu_options.c`, `musicpacks.c` | opening / closing the menu and redefining controls; what the menu contains and what each option does; the music packs found in `music/` |
+| `devtest.c` | scripted input for the automatic tests (only with `DOW_TEST=1`) |
+
+**How the host is written.** The files of `host/` are formatted with `clang-format` (`host/.clang-format`; run `clang-format -i *.c *.h` in that folder): 120 columns, one statement per line,
+every function with a comment that says what it is for, comments in English, and the sections of a file marked with `/* ---- title ---- */`. `app.h` describes how the window-thread code is divided and
+what is shared. The data the program shares between modules has descriptive names (`master_volume`, `audio_out`, `lead_with_interp`...). The drawing of the pad picture is separated from its layout
+(`padmap.c` / `padmap_backend.h`) so that a port to another system only has to write a new backend.
 
 **Start-up** (`boot.c`): the original loader (`RUNME.TOS` unpacks and runs HAGA, which probes the machine, shows a menu, reads `FILES/DOW`, patches the game and jumps into it)
 always leaves the same memory on this machine, and `boot_state_make` builds it: the game's block (60000 bytes of `FILES/DOW` from offset `$5141C`) at `$2C00` and `$81000`,
@@ -197,7 +207,17 @@ void wait_two_vbl(void)
 | `padmap.c`, `padmap_backend.h`, `padmap_gdi.c` | la imagen del mando de la pestaña Controles: núcleo portable (disposición y textos) + backend de dibujo (GDI en Windows; otro sistema escribe su propio `padmap_<backend>.c`) |
 | `gfxpack.c`, `dump.c`, `png.c` | packs gráficos, el volcado de gráficos (`assets/original`), lector/escritor de PNG |
 | `ico.png` | el icono del ejecutable y de su ventana: el script de compilación lo convierte en un `.ico` de varios tamaños (conservando la transparencia) y lo compila como recurso de Windows |
-| `emu.c`, `main.c` | hilo de emulación (reloj de 50 VBL/s, guardados, ayudas de armas), bucle de la ventana |
+| `emu.c` | hilo de emulación (reloj de 50 VBL/s, guardados, ayudas de armas, audio de cada VBL, ganchos en el código del juego) |
+| `main.c` | arranque, el bucle de la ventana (una imagen por refresco del monitor) y el cierre |
+| `app.h`, `app.c` | el estado compartido por el código del hilo de la ventana (objetos, pantalla, opciones, carpetas) y la carga / el guardado de `options.json` |
+| `game_input.c`, `fastinput.c` | teclado, mandos y navegación del menú en cada fotograma; el hilo opcional que lee las entradas 1000 veces por segundo |
+| `menu_ui.c`, `menu_options.c`, `musicpacks.c` | abrir / cerrar el menú y redefinir controles; qué contiene el menú y qué hace cada opción; los packs de música que hay en `music/` |
+| `devtest.c` | entrada guionizada para las pruebas automáticas (solo con `DOW_TEST=1`) |
+
+**Cómo está escrito el anfitrión.** Los ficheros de `host/` están formateados con `clang-format` (`host/.clang-format`; ejecuta `clang-format -i *.c *.h` en esa carpeta): 120 columnas, una sentencia por línea,
+cada función con un comentario que dice para qué sirve, comentarios en inglés y las secciones de un fichero marcadas con `/* ---- título ---- */`. `app.h` describe cómo se reparte el código del hilo de la
+ventana y qué se comparte. Los datos que el programa comparte entre módulos tienen nombres descriptivos (`master_volume`, `audio_out`, `lead_with_interp`...). El dibujo de la imagen del mando está separado de su
+disposición (`padmap.c` / `padmap_backend.h`) para que un port a otro sistema solo tenga que escribir un backend nuevo.
 
 **Arranque** (`boot.c`): el cargador original (`RUNME.TOS` descomprime y ejecuta HAGA, que sondea la máquina, muestra un menú, lee `FILES/DOW`, parchea el juego y salta a él)
 deja siempre la misma memoria en esta máquina, y `boot_state_make` la construye: el bloque del juego (60000 bytes de `FILES/DOW` desde el desplazamiento `$5141C`) en `$2C00` y `$81000`,

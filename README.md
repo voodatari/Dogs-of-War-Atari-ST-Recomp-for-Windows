@@ -15,7 +15,7 @@ Atari STE machine and is drawn at your monitor's refresh rate: the game logic ru
 (or 144 Hz…) with very low input latency. It is a single self-contained C program.
 
 ## What is this version?
-This is **version 1.1** (2026-10-20) of an unofficial, fan-made **native Windows port** of *Dogs of War* (Atari ST, Elite Systems 1989, HAGA version by Pera Putnik); every step that led here is in the [changelog](CHANGELOG.md).
+This is **version 1.1.1** (2026-10-20) of an unofficial, fan-made **native Windows port** of *Dogs of War* (Atari ST, Elite Systems 1989, HAGA version by Pera Putnik); every step that led here is in the [changelog](CHANGELOG.md).
 
 **What it is.** The game's own 68000 program has been **translated entirely to C**, and it is compiled, together with a small Atari STE machine (mini-TOS, timers, keyboard and joystick, video, YM2149 sound chip) and a Windows program (OpenGL video, mixer, input, menus), into a single `dowport.exe`. The original game logic runs unchanged at its own 25 Hz; the port draws the images in between, so the movement is smooth at 60 Hz, 144 Hz or whatever your monitor does.
 
@@ -262,7 +262,7 @@ máquina Atari STE y se dibuja a la frecuencia de refresco de tu monitor: la ló
 (o 144 Hz…) con una latencia de entrada muy baja. Es un único programa en C, autocontenido.
 
 ## ¿Qué es esta versión?
-Esta es la **versión 1.1** (2026-10-20) de un **port nativo para Windows**, no oficial y hecho por aficionados, de *Dogs of War* (Atari ST, Elite Systems 1989, versión HAGA de Pera Putnik); todos los pasos que llevaron hasta aquí están en el [registro de cambios](CHANGELOG.md).
+Esta es la **versión 1.1.1** (2026-10-20) de un **port nativo para Windows**, no oficial y hecho por aficionados, de *Dogs of War* (Atari ST, Elite Systems 1989, versión HAGA de Pera Putnik); todos los pasos que llevaron hasta aquí están en el [registro de cambios](CHANGELOG.md).
 
 **Qué es.** El propio programa 68000 del juego se ha **traducido por completo a C**, y se compila, junto con una pequeña máquina Atari STE (mini-TOS, timers, teclado y joystick, vídeo, chip de sonido YM2149) y un programa para Windows (vídeo OpenGL, mezclador, entrada, menús), en un único `dowport.exe`. La lógica original del juego se ejecuta sin cambios a sus 25 Hz; el port dibuja las imágenes intermedias, de modo que el movimiento es fluido a 60 Hz, 144 Hz o lo que dé tu monitor.
 
