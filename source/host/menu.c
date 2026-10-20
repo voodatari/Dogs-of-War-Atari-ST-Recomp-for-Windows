@@ -171,7 +171,7 @@ uint8_t *menu_draw(Menu *m, int W, int H) {
     int lo, n; range_(m, &lo, &n); if (m->top < lo || m->top >= n) m->top = lo;
     if (!m->tabfocus) { if (m->cur < m->top) m->top = m->cur; if (m->cur >= m->top + rows) m->top = m->cur - rows + 1; }
     if (m->top > lo && NOSEL(m->it[m->top - 1].kind) && m->cur - m->top < rows - 1) m->top--;
-    int ph_nat = hb + 18 + tabh + rows * lh + hint_h + foot_h + 14, ph = (has_img && ph_nat < ph_max) ? ph_max : ph_nat, px = (W - pw) / 2, py = (H - ph) / 2;          /* with a picture the panel takes all the height and the picture the extra */
+    int ph_nat = hb + 18 + tabh + rows * lh + hint_h + foot_h + 14, ph = ((m->ntabs || has_img) && ph_nat < ph_max) ? ph_max : ph_nat, px = (W - pw) / 2, py = (H - ph) / 2;          /* with tabs the panel always has the same (maximum) height, so it does not change size from tab to tab; a picture takes the extra */
     int by0 = py + ph - hint_h - foot_h - 6;                              /* top of the explanation box (its separator line is 4 pixels above) */
     HBRUSH br = CreateSolidBrush(RGB(10, 12, 24)); HPEN pen = CreatePen(PS_SOLID, 2, RGB(230, 190, 70)); SelectObject(dc, br); SelectObject(dc, pen);
     RoundRect(dc, px, py, px + pw, py + ph, 24, 24);
